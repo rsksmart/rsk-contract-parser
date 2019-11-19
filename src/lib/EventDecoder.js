@@ -2,12 +2,16 @@ import ethAbi from 'ethereumjs-abi'
 import { addSignatureDataToAbi } from './utils'
 import { ABI_SIGNATURE } from './types'
 import { remove0x, toBuffer, add0x } from 'rsk-utils'
+import { Buffer } from 'buffer'
 
 function EventDecoder (abi) {
 
   abi = addSignatureDataToAbi(abi)
 
-  const formatDecoded = decoded => add0x(decoded.toString(16))
+  const formatDecoded = decoded => {
+    let encoding = (Buffer.isBuffer(decoded)) ? 'hex' : 16
+    return add0x(decoded.toString(encoding))
+  }
 
   const getEventName = topics => {
     const sigHash = remove0x(topics.shift())

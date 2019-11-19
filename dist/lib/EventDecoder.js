@@ -1,13 +1,17 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _ethereumjsAbi = _interopRequireDefault(require("ethereumjs-abi"));
 var _utils = require("./utils");
 var _types = require("./types");
-var _rskUtils = require("rsk-utils");function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _rskUtils = require("rsk-utils");
+var _buffer = require("buffer");function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
 function EventDecoder(abi) {
 
   abi = (0, _utils.addSignatureDataToAbi)(abi);
 
-  const formatDecoded = decoded => (0, _rskUtils.add0x)(decoded.toString(16));
+  const formatDecoded = decoded => {
+    let encoding = _buffer.Buffer.isBuffer(decoded) ? 'hex' : 16;
+    return (0, _rskUtils.add0x)(decoded.toString(encoding));
+  };
 
   const getEventName = topics => {
     const sigHash = (0, _rskUtils.remove0x)(topics.shift());
