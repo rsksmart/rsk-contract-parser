@@ -28,12 +28,13 @@ function EventDecoder (abi) {
   }
   const decodeLog = log => {
     const { eventABI, topics } = getEventName(log.topics)
+    const { address } = log
     if (!eventABI) return log
     const event = eventABI.name
     let args = topics.map((topic, index) => decodeElement(topic, [eventABI.inputs[index].type]))
     const dataDecoded = decodeData(log.data, eventABI.inputs.filter(i => i.indexed === false).map(i => i.type))
     args = args.concat(dataDecoded)
-    return { event, args, abi: eventABI }
+    return { event, address, args, abi: eventABI }
   }
   return Object.freeze({ decodeLog })
 }

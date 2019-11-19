@@ -20,7 +20,6 @@ describe('# decode events', function () {
     let e = t.expect
     describe(`TX: ${tx.transactionHash}`, function () {
       let decodedLogs = parser.parseTxLogs(tx.logs)
-      //decodedLogs = decodedLogs.map(log => serialize(log))
 
       it(`should return ${e.events.length} events`, function () {
         assert.equal(tx.logs.length, e.events.length)
@@ -34,6 +33,11 @@ describe('# decode events', function () {
             assert.equal(event.event, decoded.event)
           })
 
+          it(`should have an address property`, () => {
+            assert.property(decoded, 'address')
+            if (event.address) assert.deepEqual(event.address, decoded.address)
+          })
+
           it(`should have an abi property`, () => {
             assert.property(decoded, 'abi')
             if (event.abi) assert.deepEqual(event.abi, decoded.abi)
@@ -45,7 +49,7 @@ describe('# decode events', function () {
             if (event._addresses) assert.deepEqual(event._addresses, decoded._addresses)
           })
 
-          it(`address field must contain all addresses`, () => {
+          it(`addresses field must contain all addresses`, () => {
             const { abi, args, _addresses } = decoded
             abi.inputs.forEach((v, i) => {
               const { type } = v
