@@ -62,6 +62,12 @@ describe('# decode events', function () {
             })
           })
 
+          it(`decoded event should include all log properties`, () => {
+            for (let p in tx.logs[i]) {
+              assert.deepEqual(decoded[p], tx.logs[i][p], p)
+            }
+          })
+
           let argsLength = Object.keys(event.args).length
           it(`should have: ${argsLength} arguments`, function () {
             assert.equal(argsLength, Object.keys(decoded.args).length)

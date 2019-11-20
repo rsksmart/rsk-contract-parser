@@ -31,6 +31,7 @@ function EventDecoder(abi) {
     return decoded.map(d => formatDecoded(d));
   };
   const decodeLog = log => {
+    log = Object.assign({}, log);
     const { eventABI, topics } = getEventName(log.topics);
     const { address } = log;
     if (!eventABI) return log;
@@ -38,7 +39,7 @@ function EventDecoder(abi) {
     let args = topics.map((topic, index) => decodeElement(topic, [eventABI.inputs[index].type]));
     const dataDecoded = decodeData(log.data, eventABI.inputs.filter(i => i.indexed === false).map(i => i.type));
     args = args.concat(dataDecoded);
-    return { event, address, args, abi: eventABI };
+    return Object.assign(log, { event, address, args, abi: eventABI });
   };
   return Object.freeze({ decodeLog });
 }var _default =
