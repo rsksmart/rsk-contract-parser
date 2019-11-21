@@ -1,5 +1,6 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.NativeContractsEvents = NativeContractsEvents;exports.default = void 0;var _rskUtils = require("rsk-utils");
-var btcUtils = _interopRequireWildcard(require("./btcUtils"));function _getRequireWildcardCache() {if (typeof WeakMap !== "function") return null;var cache = new WeakMap();_getRequireWildcardCache = function () {return cache;};return cache;}function _interopRequireWildcard(obj) {if (obj && obj.__esModule) {return obj;}if (obj === null || typeof obj !== "object" && typeof obj !== "function") {return { default: obj };}var cache = _getRequireWildcardCache();if (cache && cache.has(obj)) {return cache.get(obj);}var newObj = {};var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;for (var key in obj) {if (Object.prototype.hasOwnProperty.call(obj, key)) {var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;if (desc && (desc.get || desc.set)) {Object.defineProperty(newObj, key, desc);} else {newObj[key] = obj[key];}}}newObj.default = obj;if (cache) {cache.set(obj, newObj);}return newObj;}
+var btcUtils = _interopRequireWildcard(require("./btcUtils"));
+var _utils = require("./utils");function _getRequireWildcardCache() {if (typeof WeakMap !== "function") return null;var cache = new WeakMap();_getRequireWildcardCache = function () {return cache;};return cache;}function _interopRequireWildcard(obj) {if (obj && obj.__esModule) {return obj;}if (obj === null || typeof obj !== "object" && typeof obj !== "function") {return { default: obj };}var cache = _getRequireWildcardCache();if (cache && cache.has(obj)) {return cache.get(obj);}var newObj = {};var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;for (var key in obj) {if (Object.prototype.hasOwnProperty.call(obj, key)) {var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;if (desc && (desc.get || desc.set)) {Object.defineProperty(newObj, key, desc);} else {newObj[key] = obj[key];}}}newObj.default = obj;if (cache) {cache.set(obj, newObj);}return newObj;}
 
 function NativeContractsEvents({ bitcoinNetwork } = {}) {
   const network = bitcoinNetwork || 'testnet';
@@ -47,7 +48,7 @@ function NativeContractsEvents({ bitcoinNetwork } = {}) {
     block = block.toString('ascii');
     return [oldFederationAddress, oldFederationMembers, newFederationAddress, newFederationMembers, block];
   };
-  const fakeAbi = Object.freeze([
+  const fakeAbi = Object.freeze((0, _utils.addSignatureDataToAbi)([
   { // Remasc events
     anonymous: false,
     inputs: [
@@ -149,7 +150,7 @@ function NativeContractsEvents({ bitcoinNetwork } = {}) {
 
     name: 'commit_federation_topic',
     type: 'event',
-    _decoder: commitFederationDecoder }]);
+    _decoder: commitFederationDecoder }]));
 
 
 
@@ -188,7 +189,9 @@ function NativeContractsEvents({ bitcoinNetwork } = {}) {
     let event = decodeEventName(topics.shift());
     let abi = getEventAbi(event);
     if (event && abi) {
+      const { signature } = (0, _utils.getSignatureDataFromAbi)(abi);
       log.event = event;
+      log.signature = signature;
       log.abi = cleanAbi(abi);
       log.args = [];
       const decoder = abi._decoder || decodeData;

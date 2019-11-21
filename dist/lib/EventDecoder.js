@@ -1,11 +1,9 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _ethereumjsAbi = _interopRequireDefault(require("ethereumjs-abi"));
 var _utils = require("./utils");
-var _types = require("./types");
 var _rskUtils = require("rsk-utils");
 var _buffer = require("buffer");function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
 function EventDecoder(abi) {
-
   abi = (0, _utils.addSignatureDataToAbi)(abi);
 
   const formatDecoded = decoded => {
@@ -16,7 +14,7 @@ function EventDecoder(abi) {
   const getEventName = topics => {
     const sigHash = (0, _rskUtils.remove0x)(topics.shift());
     let events = abi.filter(i => {
-      let { indexed, signature } = i[_types.ABI_SIGNATURE];
+      let { indexed, signature } = (0, _utils.getSignatureDataFromAbi)(i);
       return signature === sigHash && indexed === topics.length;
     });
     if (events.length > 1) throw new Error('Duplicate events in ABI');
@@ -35,11 +33,12 @@ function EventDecoder(abi) {
     const { eventABI, topics } = getEventName(log.topics);
     const { address } = log;
     if (!eventABI) return log;
-    const event = eventABI.name;
+    const { name } = eventABI;
+    const { signature } = (0, _utils.getSignatureDataFromAbi)(eventABI);
     let args = topics.map((topic, index) => decodeElement(topic, [eventABI.inputs[index].type]));
     const dataDecoded = decodeData(log.data, eventABI.inputs.filter(i => i.indexed === false).map(i => i.type));
     args = args.concat(dataDecoded);
-    return Object.assign(log, { event, address, args, abi: eventABI });
+    return Object.assign(log, { event: name, address, args, abi: eventABI, signature });
   };
   return Object.freeze({ decodeLog });
 }var _default =

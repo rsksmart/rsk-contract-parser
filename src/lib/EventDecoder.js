@@ -1,11 +1,9 @@
 import ethAbi from 'ethereumjs-abi'
-import { addSignatureDataToAbi } from './utils'
-import { ABI_SIGNATURE } from './types'
+import { addSignatureDataToAbi, getSignatureDataFromAbi } from './utils'
 import { remove0x, toBuffer, add0x } from 'rsk-utils'
 import { Buffer } from 'buffer'
 
 function EventDecoder (abi) {
-
   abi = addSignatureDataToAbi(abi)
 
   const formatDecoded = decoded => {
@@ -16,7 +14,7 @@ function EventDecoder (abi) {
   const getEventName = topics => {
     const sigHash = remove0x(topics.shift())
     let events = abi.filter(i => {
-      let { indexed, signature } = i[ABI_SIGNATURE]
+      let { indexed, signature } = getSignatureDataFromAbi(i)
       return signature === sigHash && indexed === topics.length
     })
     if (events.length > 1) throw new Error('Duplicate events in ABI')
@@ -35,11 +33,12 @@ function EventDecoder (abi) {
     const { eventABI, topics } = getEventName(log.topics)
     const { address } = log
     if (!eventABI) return log
-    const event = eventABI.name
+    const { name } = eventABI
+    const { signature } = getSignatureDataFromAbi(eventABI)
     let args = topics.map((topic, index) => decodeElement(topic, [eventABI.inputs[index].type]))
     const dataDecoded = decodeData(log.data, eventABI.inputs.filter(i => i.indexed === false).map(i => i.type))
     args = args.concat(dataDecoded)
-    return Object.assign(log, { event, address, args, abi: eventABI })
+    return Object.assign(log, { event: name, address, args, abi: eventABI, signature })
   }
   return Object.freeze({ decodeLog })
 }

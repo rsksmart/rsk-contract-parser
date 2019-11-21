@@ -43,6 +43,11 @@ describe('# decode events', function () {
             if (event.abi) assert.deepEqual(event.abi, decoded.abi)
           })
 
+          it(`should have a signature property`, () => {
+            assert.property(decoded, 'signature')
+            if (event.signature) assert.deepEqual(event.signature, decoded.signature)
+          })
+
           it(`should have an addresses property`, () => {
             assert.property(decoded, '_addresses')
             assert.typeOf(decoded._addresses, 'array')

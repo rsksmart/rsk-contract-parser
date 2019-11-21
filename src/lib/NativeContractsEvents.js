@@ -1,5 +1,6 @@
 import { remove0x, add0x, rlp } from 'rsk-utils'
 import * as btcUtils from './btcUtils'
+import { addSignatureDataToAbi, getSignatureDataFromAbi } from './utils'
 
 export function NativeContractsEvents ({ bitcoinNetwork } = {}) {
   const network = bitcoinNetwork || 'testnet'
@@ -47,7 +48,7 @@ export function NativeContractsEvents ({ bitcoinNetwork } = {}) {
     block = block.toString('ascii')
     return [oldFederationAddress, oldFederationMembers, newFederationAddress, newFederationMembers, block]
   }
-  const fakeAbi = Object.freeze([
+  const fakeAbi = Object.freeze(addSignatureDataToAbi([
     { // Remasc events
       anonymous: false,
       inputs: [
@@ -151,7 +152,7 @@ export function NativeContractsEvents ({ bitcoinNetwork } = {}) {
       type: 'event',
       _decoder: commitFederationDecoder
     }
-  ])
+  ]))
 
   const getEventAbi = eventName => fakeAbi.find(a => a.name === eventName && a.type === 'event')
 
@@ -188,7 +189,9 @@ export function NativeContractsEvents ({ bitcoinNetwork } = {}) {
     let event = decodeEventName(topics.shift())
     let abi = getEventAbi(event)
     if (event && abi) {
+      const { signature } = getSignatureDataFromAbi(abi)
       log.event = event
+      log.signature = signature
       log.abi = cleanAbi(abi)
       log.args = []
       const decoder = abi._decoder || decodeData

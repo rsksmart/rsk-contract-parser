@@ -59,3 +59,7 @@ export const erc165Id = selectors => {
 export const erc165IdFromMethods = methods => {
   return erc165Id(methods.map(m => soliditySelector(soliditySignature(m))))
 }
+
+export const getSignatureDataFromAbi = abi => {
+  return abi[ABI_SIGNATURE]
+}

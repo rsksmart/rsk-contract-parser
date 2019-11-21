@@ -1,4 +1,4 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.erc165IdFromMethods = exports.erc165Id = exports.addSignatureDataToAbi = exports.abiSignatureData = exports.getInputsIndexes = exports.removeAbiSignatureData = exports.solidityName = exports.soliditySelector = exports.soliditySignature = exports.abiMethods = exports.abiEvents = exports.setAbi = void 0;var _rskUtils = require("rsk-utils");
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.getSignatureDataFromAbi = exports.erc165IdFromMethods = exports.erc165Id = exports.addSignatureDataToAbi = exports.abiSignatureData = exports.getInputsIndexes = exports.removeAbiSignatureData = exports.solidityName = exports.soliditySelector = exports.soliditySignature = exports.abiMethods = exports.abiEvents = exports.setAbi = void 0;var _rskUtils = require("rsk-utils");
 var _types = require("./types");
 
 const setAbi = abi => addSignatureDataToAbi(abi, true);exports.setAbi = setAbi;
@@ -59,3 +59,7 @@ const erc165Id = selectors => {
 const erc165IdFromMethods = methods => {
   return erc165Id(methods.map(m => soliditySelector(soliditySignature(m))));
 };exports.erc165IdFromMethods = erc165IdFromMethods;
+
+const getSignatureDataFromAbi = abi => {
+  return abi[_types.ABI_SIGNATURE];
+};exports.getSignatureDataFromAbi = getSignatureDataFromAbi;
