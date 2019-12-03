@@ -33,6 +33,18 @@ describe('# decode events', function () {
             assert.equal(event.event, decoded.event)
           })
 
+          it(`should have a blockHash property`, () => {
+            assert.property(decoded, 'blockHash')
+          })
+
+          it(`should have a transactionHash property`, () => {
+            assert.property(decoded, 'transactionHash')
+          })
+
+          it(`should have a transactionIndex property`, () => {
+            assert.property(decoded, 'transactionIndex')
+          })
+
           it(`should have an address property`, () => {
             assert.property(decoded, 'address')
             if (event.address) assert.deepEqual(event.address, decoded.address)
