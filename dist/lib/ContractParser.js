@@ -131,15 +131,19 @@ class ContractParser {
     }
   }
 
-  async getTokenData(contract) {
-    const methods = ['name', 'symbol', 'decimals', 'totalSupply'];
-    let [name, symbol, decimals, totalSupply] = await Promise.all(
+  async getTokenData(contract, { methods } = {}) {
+    methods = methods || ['name', 'symbol', 'decimals', 'totalSupply'];
+    let result = await Promise.all(
     methods.map((m) =>
     this.call(m, contract).
     then(res => res).
     catch(err => this.log.debug(`[${contract.address}] Error executing ${m}  Error: ${err}`))));
 
-    return { name, symbol, decimals, totalSupply };
+    return result.reduce((v, a, i) => {
+      let name = methods[i];
+      v[name] = a;
+      return v;
+    }, {});
   }
 
   hasMethodSelector(txInputData, selector) {
