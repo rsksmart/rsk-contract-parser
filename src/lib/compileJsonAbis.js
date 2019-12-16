@@ -2,29 +2,37 @@ import fs from 'fs'
 import util from 'util'
 import path from 'path'
 import { ABI_SIGNATURE } from './types'
-import { addSignatureDataToAbi, abiEvents } from './utils'
+import { addSignatureDataToAbi, filterEvents } from './utils'
 
 const readDir = util.promisify(fs.readdir)
 const readFile = util.promisify(fs.readFile)
 const writeFile = util.promisify(fs.writeFile)
 
 const jsonPath = `${__dirname}/jsonAbis`
+const ozPath = path.resolve('node_modules/openzeppelin-solidity/build/contracts')
 const destinationFile = `${__dirname}/compiled_abi.json`
 
-compileAbi().then(abi => {
+compileAbi([jsonPath, ozPath]).then(abi => {
   writeFile(destinationFile, JSON.stringify(abi, null, 2))
     .then(() => {
-      console.log(`new abi saved on ${destinationFile}`)
+      console.log(`New ABI saved on ${destinationFile}`)
       process.exit(0)
     })
 })
 
-async function compileAbi () {
+async function compileAbi (dirs) {
   try {
-    let files = await readDir(jsonPath)
-    files = files.filter(file => path.extname(file) === '.json')
-    if (!files || !files.length) throw new Error('No json files')
-    let abi = await Promise.all(files.map(file => readJson(`${jsonPath}/${file}`)))
+    let jsonFiles = []
+    for (let dir of dirs) {
+      let files = await readDir(dir)
+      files = files.filter(file => path.extname(file) === '.json')
+      if (!files || !files.length) throw new Error(`No json files in dir ${dir}`)
+      jsonFiles = jsonFiles.concat(files.map(file => `${dir}/${file}`))
+    }
+    let abi = await Promise.all(jsonFiles.map(file => readJson(`${file}`).then(content => {
+      return (Array.isArray(content)) ? content : content.abi
+    })))
+    if (!abi) throw new Error(`Invalid abi `)
     abi = abi.reduce((a, v, i, array) => v.concat(a))
     abi = processAbi(abi)
     return abi
@@ -45,7 +53,7 @@ async function readJson (file) {
   }
 }
 
-function processAbi (abi) {
+export function processAbi (abi) {
   // remove fallbacks
   abi = abi.filter(a => a.type !== 'fallback')
   // remove duplicates
@@ -60,19 +68,9 @@ function processAbi (abi) {
     console.log(fourBytes.filter((v, i) => fourBytes.indexOf(v) !== i))
     throw new Error('4bytes collision')
   }
-  // check events
-  let duppEvents = searchDupplicatedEvents(abi)
-  if (duppEvents) throw new Error('Dupplicated events')
+  // filter events
+  abi = filterEvents(abi)
   return abi
-}
-
-function searchDupplicatedEvents (abi) {
-  let events = abiEvents(abi).map(e => {
-    let s = e[ABI_SIGNATURE]
-    return `${s.signature}_${s.indexed}`
-  })
-  let unique = [...new Set(events)]
-  return events.length !== unique.length
 }
 
 process.on('unhandledRejection', err => {

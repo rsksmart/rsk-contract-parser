@@ -25,7 +25,7 @@ export const removeAbiSignatureData = (abi) => {
 
 export const getInputsIndexes = abi => {
   let { inputs } = abi
-  return (inputs && abi.type === 'event') ? inputs.map(i => i.indexed) : null
+  return (inputs && abi.type === 'event') ? inputs.map(i => i.indexed) : []
 }
 
 export const abiSignatureData = abi => {
@@ -33,7 +33,10 @@ export const abiSignatureData = abi => {
   let signature = (method) ? soliditySignature(method) : null
   let index = getInputsIndexes(abi)
   let indexed = (index) ? index.filter(i => i === true).length : 0
-  let eventSignature = (method && abi.type === 'event') ? soliditySignature(`${method}${Buffer.from(index).toString('hex')}`) : null
+  let eventSignature = null
+  if ((method && abi.type === 'event')) {
+    eventSignature = soliditySignature(`${method}${Buffer.from(index).toString('hex')}`)
+  }
   return { method, signature, index, indexed, eventSignature }
 }
 
@@ -63,4 +66,16 @@ export const erc165IdFromMethods = methods => {
 
 export const getSignatureDataFromAbi = abi => {
   return abi[ABI_SIGNATURE]
+}
+
+export function filterEvents (abi) {
+  const type = 'event'
+  // get events from ABI
+  let events = abi.filter(a => a.type === type)
+  // remove events from ABI
+  abi = abi.filter(a => a.type !== type)
+  let keys = [...new Set(events.map(e => e[ABI_SIGNATURE].eventSignature))]
+  events = keys.map(k => events.find(e => e[ABI_SIGNATURE].eventSignature === k))
+  abi = abi.concat(events)
+  return abi
 }
