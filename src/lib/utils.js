@@ -33,7 +33,8 @@ export const abiSignatureData = abi => {
   let signature = (method) ? soliditySignature(method) : null
   let index = getInputsIndexes(abi)
   let indexed = (index) ? index.filter(i => i === true).length : 0
-  return { method, signature, index, indexed }
+  let eventSignature = (method && abi.type === 'event') ? soliditySignature(`${method}${Buffer.from(index).toString('hex')}`) : null
+  return { method, signature, index, indexed, eventSignature }
 }
 
 export const addSignatureDataToAbi = (abi, skip) => {
