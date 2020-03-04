@@ -4,12 +4,14 @@ const INTERFACE_ID_BYTES = 4;exports.INTERFACE_ID_BYTES = INTERFACE_ID_BYTES;
 
 const bitcoinNetworks = {
   TESTNET: 'testnet',
-  MAINNET: 'mainnet' };exports.bitcoinNetworks = bitcoinNetworks;
+  MAINNET: 'mainnet',
+  REGTEST: 'regtest' };exports.bitcoinNetworks = bitcoinNetworks;
 
 
 const bitcoinRskNetWorks = {
   31: bitcoinNetworks.TESTNET,
-  30: bitcoinNetworks.MAINNET };exports.bitcoinRskNetWorks = bitcoinRskNetWorks;
+  30: bitcoinNetworks.MAINNET,
+  33: bitcoinNetworks.REGTEST };exports.bitcoinRskNetWorks = bitcoinRskNetWorks;
 
 
 const contractsInterfaces = {

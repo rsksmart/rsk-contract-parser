@@ -4,12 +4,14 @@ export const INTERFACE_ID_BYTES = 4
 
 export const bitcoinNetworks = {
   TESTNET: 'testnet',
-  MAINNET: 'mainnet'
+  MAINNET: 'mainnet',
+  REGTEST: 'regtest'
 }
 
 export const bitcoinRskNetWorks = {
   31: bitcoinNetworks.TESTNET,
-  30: bitcoinNetworks.MAINNET
+  30: bitcoinNetworks.MAINNET,
+  33: bitcoinNetworks.REGTEST
 }
 
 export const contractsInterfaces = {

@@ -10,7 +10,11 @@ const PREFIXES = {
 
   testnet: {
     pubKeyHash: '6F',
-    scriptHash: 'C4' } };
+    scriptHash: 'C4' },
+
+  regtest: {
+    pubKeyHash: '00',
+    scriptHash: '00' } };
 
 
 const getNetPrefix = netName => {
