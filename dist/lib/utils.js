@@ -1,4 +1,4 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.filterEvents = filterEvents;exports.getSignatureDataFromAbi = exports.erc165IdFromMethods = exports.erc165Id = exports.addSignatureDataToAbi = exports.abiSignatureData = exports.getInputsIndexes = exports.removeAbiSignatureData = exports.solidityName = exports.soliditySelector = exports.soliditySignature = exports.abiMethods = exports.abiEvents = exports.setAbi = void 0;var _rskUtils = require("rsk-utils");
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.filterEvents = filterEvents;exports.binarySearchNumber = binarySearchNumber;exports.getSignatureDataFromAbi = exports.erc165IdFromMethods = exports.erc165Id = exports.addSignatureDataToAbi = exports.abiSignatureData = exports.getInputsIndexes = exports.removeAbiSignatureData = exports.solidityName = exports.soliditySelector = exports.soliditySignature = exports.abiMethods = exports.abiEvents = exports.setAbi = void 0;var _rskUtils = require("rsk-utils");
 var _types = require("./types");
 
 const setAbi = abi => addSignatureDataToAbi(abi, true);exports.setAbi = setAbi;
@@ -78,4 +78,31 @@ function filterEvents(abi) {
   events = keys.map(k => events.find(e => e[_types.ABI_SIGNATURE].eventSignature === k));
   abi = abi.concat(events);
   return abi;
+}
+
+function filterArr(a) {
+  if (!Array.isArray(a)) return a;
+  return a.find(x => filterArr(x));
+}
+
+async function binarySearchNumber(searchCb, high, low) {
+  try {
+    high = parseInt(high || 0);
+    low = parseInt(low || 0);
+    if (typeof searchCb !== 'function') throw new Error('SeachCb must be a function');
+    let [l, h] = await Promise.all([low, high].map(b => searchCb(b)));
+    if (l !== h) {
+      if (high === low + 1) {
+        return high;
+      } else {
+        let mid = Math.floor(high / 2 + low / 2);
+        let res = await Promise.all([
+        binarySearchNumber(searchCb, high, mid),
+        binarySearchNumber(searchCb, mid, low)]);
+        return filterArr(res);
+      }
+    }
+  } catch (err) {
+    return Promise.reject(err);
+  }
 }
