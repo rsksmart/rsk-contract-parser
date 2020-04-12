@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "lint": "npx eslint src/**/* --quiet",
-    "test": "npx mocha test/*.spec.js",
+    "test": "npx mocha",
     "build": "npx babel src -d dist --copy-files",
     "abi": "npx babel-node --presets  @babel/preset-env src/lib/compileJsonAbis.js"
   },
