@@ -1,3 +1,4 @@
 import { ContractParser } from './lib/ContractParser'
-export { ContractParser }
+import { BcSearch } from './lib/BcSearch'
+export { ContractParser, BcSearch }
 export default ContractParser
