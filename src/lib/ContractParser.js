@@ -66,8 +66,8 @@ export class ContractParser {
     return methods
   }
 
-  parseTxLogs (logs) {
-    return this.decodeLogs(logs).map(event => {
+  parseTxLogs (logs, abi) {
+    return this.decodeLogs(logs, abi).map(event => {
       this.addEventAddresses(event)
       event.abi = removeAbiSignatureData(event.abi)
       return event
