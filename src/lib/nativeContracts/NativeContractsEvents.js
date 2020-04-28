@@ -1,6 +1,6 @@
 import { remove0x, add0x, rlp } from 'rsk-utils'
-import * as btcUtils from './btcUtils'
-import { addSignatureDataToAbi, getSignatureDataFromAbi } from './utils'
+import * as btcUtils from '../btcUtils'
+import { addSignatureDataToAbi, getSignatureDataFromAbi } from '../utils'
 
 export function NativeContractsEvents ({ bitcoinNetwork } = {}) {
   const network = bitcoinNetwork || 'testnet'

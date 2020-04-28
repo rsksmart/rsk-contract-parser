@@ -1,4 +1,4 @@
-import { NativeContracts, parseNativeContracts, defaultNativeContracts } from '../src/lib/NativeContracts'
+import { NativeContracts, parseNativeContracts, defaultNativeContracts } from '../src/lib/nativeContracts/NativeContracts'
 import { expect } from 'chai'
 
 describe(`#NativeContracts`, function () {
