@@ -11,7 +11,7 @@ function EventDecoder (abi) {
     return add0x(decoded.toString(encoding))
   }
 
-  const getEventName = topics => {
+  const getEventAbi = topics => {
     const sigHash = remove0x(topics.shift())
     let events = abi.filter(i => {
       let { indexed, signature } = getSignatureDataFromAbi(i)
@@ -30,7 +30,7 @@ function EventDecoder (abi) {
   }
   const decodeLog = log => {
     log = Object.assign({}, log)
-    const { eventABI, topics } = getEventName(log.topics)
+    const { eventABI, topics } = getEventAbi(log.topics)
     const { address } = log
     if (!eventABI) return log
     const { name } = eventABI
@@ -40,7 +40,7 @@ function EventDecoder (abi) {
     args = args.concat(dataDecoded)
     return Object.assign(log, { event: name, address, args, abi: eventABI, signature })
   }
-  return Object.freeze({ decodeLog })
+  return Object.freeze({ decodeLog, getEventAbi })
 }
 
 export default EventDecoder
