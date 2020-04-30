@@ -1,6 +1,6 @@
 import interfacesIds from './interfacesIds'
 import { includesAll } from 'rsk-utils'
-import NativeContractsEvents from './nativeContracts/NativeContractsEvents'
+import NativeContractsDecoder from './nativeContracts/NativeContractsDecoder'
 import NativeContracts from './nativeContracts/NativeContracts'
 import Contract from './Contract'
 import EventDecoder from './EventDecoder'
@@ -25,7 +25,7 @@ export class ContractParser {
     this.nativeContracts = NativeContracts(initConfig)
     if (this.netId) {
       let bitcoinNetwork = bitcoinRskNetWorks[this.netId]
-      this.nativeContractsEvents = (bitcoinNetwork) ? NativeContractsEvents({ bitcoinNetwork }) : undefined
+      this.nativeContractsEvents = NativeContractsDecoder({ bitcoinNetwork })
     }
   }
 
@@ -93,13 +93,6 @@ export class ContractParser {
     return event
   }
 
-  getNativeContractsEvents () {
-    if (!this.nativeContracts || !this.nativeContractsEvents) {
-      throw new Error(`Native contracts decoder is missing, check the value of netId:${this.netId}`)
-    }
-    return this.nativeContractsEvents
-  }
-
   decodeLogs (logs, abi) {
     abi = abi || this.abi
     const eventDecoder = EventDecoder(abi)
@@ -110,7 +103,7 @@ export class ContractParser {
     const { nativeContractsEvents } = this
     return logs.map(log => {
       const { address } = log
-      const decoder = (isNativeContract(address)) ? nativeContractsEvents : eventDecoder
+      const decoder = (isNativeContract(address)) ? nativeContractsEvents.getEventDecoder(log) : eventDecoder
       return decoder.decodeLog(log)
     })
   }
