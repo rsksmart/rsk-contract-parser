@@ -1,7 +1,7 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = exports.ContractParser = void 0;var _interfacesIds = _interopRequireDefault(require("./interfacesIds"));
 var _rskUtils = require("rsk-utils");
-var _NativeContractsEvents = _interopRequireDefault(require("./NativeContractsEvents"));
-var _NativeContracts = _interopRequireDefault(require("./NativeContracts"));
+var _NativeContractsDecoder = _interopRequireDefault(require("./nativeContracts/NativeContractsDecoder"));
+var _NativeContracts = _interopRequireDefault(require("./nativeContracts/NativeContracts"));
 var _Contract = _interopRequireDefault(require("./Contract"));
 var _EventDecoder = _interopRequireDefault(require("./EventDecoder"));
 var _Abi = _interopRequireDefault(require("./Abi"));
@@ -25,7 +25,7 @@ class ContractParser {
     this.nativeContracts = (0, _NativeContracts.default)(initConfig);
     if (this.netId) {
       let bitcoinNetwork = _types.bitcoinRskNetWorks[this.netId];
-      this.nativeContractsEvents = bitcoinNetwork ? (0, _NativeContractsEvents.default)({ bitcoinNetwork }) : undefined;
+      this.nativeContractsEvents = (0, _NativeContractsDecoder.default)({ bitcoinNetwork });
     }
   }
 
@@ -66,8 +66,8 @@ class ContractParser {
     return methods;
   }
 
-  parseTxLogs(logs) {
-    return this.decodeLogs(logs).map(event => {
+  parseTxLogs(logs, abi) {
+    return this.decodeLogs(logs, abi).map(event => {
       this.addEventAddresses(event);
       event.abi = (0, _utils.removeAbiSignatureData)(event.abi);
       return event;
@@ -93,13 +93,6 @@ class ContractParser {
     return event;
   }
 
-  getNativeContractsEvents() {
-    if (!this.nativeContracts || !this.nativeContractsEvents) {
-      throw new Error(`Native contracts decoder is missing, check the value of netId:${this.netId}`);
-    }
-    return this.nativeContractsEvents;
-  }
-
   decodeLogs(logs, abi) {
     abi = abi || this.abi;
     const eventDecoder = (0, _EventDecoder.default)(abi);
@@ -110,7 +103,7 @@ class ContractParser {
     const { nativeContractsEvents } = this;
     return logs.map(log => {
       const { address } = log;
-      const decoder = isNativeContract(address) ? nativeContractsEvents : eventDecoder;
+      const decoder = isNativeContract(address) ? nativeContractsEvents.getEventDecoder(log) : eventDecoder;
       return decoder.decodeLog(log);
     });
   }
