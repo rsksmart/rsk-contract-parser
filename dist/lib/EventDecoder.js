@@ -1,17 +1,16 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _ethereumjsAbi = _interopRequireDefault(require("ethereumjs-abi"));
 var _utils = require("./utils");
-var _rskUtils = require("rsk-utils");
-var _buffer = require("buffer");function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _rskUtils = require("rsk-utils");function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
 function EventDecoder(abi) {
   abi = (0, _utils.addSignatureDataToAbi)(abi);
 
   const formatDecoded = decoded => {
-    let encoding = _buffer.Buffer.isBuffer(decoded) ? 'hex' : 16;
-    return (0, _rskUtils.add0x)(decoded.toString(encoding));
+    return (0, _rskUtils.add0x)(Buffer.isBuffer(decoded) ? (0, _rskUtils.bufferToHex)(decoded) : decoded.toString(16));
   };
 
   const getEventAbi = topics => {
+    topics = [...topics];
     const sigHash = (0, _rskUtils.remove0x)(topics.shift());
     let events = abi.filter(i => {
       let { indexed, signature } = (0, _utils.getSignatureDataFromAbi)(i);
@@ -22,7 +21,16 @@ function EventDecoder(abi) {
     return { eventABI, topics };
   };
 
-  const decodeElement = (data, types) => formatDecoded(_ethereumjsAbi.default.rawDecode(types, (0, _rskUtils.toBuffer)(data)));
+  const decodeElement = (data, types) => {
+    let decoded = _ethereumjsAbi.default.rawDecode(types, (0, _rskUtils.toBuffer)(data));
+    if (Array.isArray(decoded)) {
+      decoded = decoded.map(d => formatDecoded(d));
+      if (decoded.length === 1) decoded = decoded.join();
+    } else {
+      decoded = formatDecoded(decoded);
+    }
+    return decoded;
+  };
 
   const decodeData = (data, types) => {
     let decoded = _ethereumjsAbi.default.rawDecode(types, (0, _rskUtils.toBuffer)(data));
@@ -35,9 +43,14 @@ function EventDecoder(abi) {
     if (!eventABI) return log;
     const { name } = eventABI;
     const { signature } = (0, _utils.getSignatureDataFromAbi)(eventABI);
-    let args = topics.map((topic, index) => decodeElement(topic, [eventABI.inputs[index].type]));
-    const dataDecoded = decodeData(log.data, eventABI.inputs.filter(i => i.indexed === false).map(i => i.type));
-    args = args.concat(dataDecoded);
+    const { inputs } = eventABI;
+    const indexedInputs = inputs.filter(i => i.indexed === true);
+    let decodedTopics = topics.map((topic, index) => decodeElement(topic, [indexedInputs[index].type]));
+    const decodedData = decodeData(log.data, inputs.filter(i => i.indexed === false).map(i => i.type));
+    const args = [];
+    for (let input of inputs) {
+      args.push(input.indexed ? decodedTopics.shift() : decodedData.shift());
+    }
     return Object.assign(log, { event: name, address, args, abi: eventABI, signature });
   };
   return Object.freeze({ decodeLog, getEventAbi });

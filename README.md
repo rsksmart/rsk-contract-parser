@@ -1,3 +1,2 @@
 # RSK-contract-parser
-> Get information about smart contracts and decode events
-
+> NodeJS module to interact with smart contracts and native rsk contracts.
