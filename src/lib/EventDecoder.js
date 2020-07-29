@@ -1,17 +1,16 @@
 import ethAbi from 'ethereumjs-abi'
 import { addSignatureDataToAbi, getSignatureDataFromAbi } from './utils'
-import { remove0x, toBuffer, add0x } from 'rsk-utils'
-import { Buffer } from 'buffer'
+import { remove0x, toBuffer, add0x, bufferToHex } from 'rsk-utils'
 
 function EventDecoder (abi) {
   abi = addSignatureDataToAbi(abi)
 
-  const formatDecoded = decoded => {
-    let encoding = (Buffer.isBuffer(decoded)) ? 'hex' : 16
-    return add0x(decoded.toString(encoding))
+  const formatDecoded = (decoded) => {
+    return add0x(Buffer.isBuffer(decoded) ? bufferToHex(decoded) : decoded.toString(16))
   }
 
   const getEventAbi = topics => {
+    topics = [...topics]
     const sigHash = remove0x(topics.shift())
     let events = abi.filter(i => {
       let { indexed, signature } = getSignatureDataFromAbi(i)
@@ -22,7 +21,16 @@ function EventDecoder (abi) {
     return { eventABI, topics }
   }
 
-  const decodeElement = (data, types) => formatDecoded(ethAbi.rawDecode(types, toBuffer(data)))
+  const decodeElement = (data, types) => {
+    let decoded = ethAbi.rawDecode(types, toBuffer(data))
+    if (Array.isArray(decoded)) {
+      decoded = decoded.map(d => formatDecoded(d))
+      if (decoded.length === 1) decoded = decoded.join()
+    } else {
+      decoded = formatDecoded(decoded)
+    }
+    return decoded
+  }
 
   const decodeData = (data, types) => {
     let decoded = ethAbi.rawDecode(types, toBuffer(data))
@@ -35,9 +43,14 @@ function EventDecoder (abi) {
     if (!eventABI) return log
     const { name } = eventABI
     const { signature } = getSignatureDataFromAbi(eventABI)
-    let args = topics.map((topic, index) => decodeElement(topic, [eventABI.inputs[index].type]))
-    const dataDecoded = decodeData(log.data, eventABI.inputs.filter(i => i.indexed === false).map(i => i.type))
-    args = args.concat(dataDecoded)
+    const { inputs } = eventABI
+    const indexedInputs = inputs.filter(i => i.indexed === true)
+    let decodedTopics = topics.map((topic, index) => decodeElement(topic, [indexedInputs[index].type]))
+    const decodedData = decodeData(log.data, inputs.filter(i => i.indexed === false).map(i => i.type))
+    const args = []
+    for (let input of inputs) {
+      args.push((input.indexed) ? decodedTopics.shift() : decodedData.shift())
+    }
     return Object.assign(log, { event: name, address, args, abi: eventABI, signature })
   }
   return Object.freeze({ decodeLog, getEventAbi })

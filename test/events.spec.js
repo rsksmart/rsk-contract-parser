@@ -1,6 +1,6 @@
 import { assert } from 'chai'
 import { ContractParser } from '../src/lib/ContractParser'
-// nimport { serialize } from '../../src/lib/utils'
+import { isAddress } from 'rsk-utils'
 import txs from './txs/'
 
 const initConfig = {
@@ -15,8 +15,8 @@ describe('# decode events', function () {
   for (let t of txs) {
     let id = t.netId || 31
     initConfig.net = { id }
-    let parser = new ContractParser({ initConfig })
-    let tx = t.tx
+    let { abi, tx } = t
+    let parser = new ContractParser({ initConfig, abi })
     let e = t.expect
     describe(`TX: ${tx.transactionHash}`, function () {
       let decodedLogs = parser.parseTxLogs(tx.logs)
@@ -50,53 +50,57 @@ describe('# decode events', function () {
             if (event.address) assert.deepEqual(event.address, decoded.address)
           })
 
-          it(`should have an abi property`, () => {
-            assert.property(decoded, 'abi')
-            if (event.abi) assert.deepEqual(event.abi, decoded.abi)
-          })
+          // test decoded events
+          if (event.event) {
+            it(`addresses field must contain all addresses`, () => {
+              const { abi, args, _addresses } = decoded
+              abi.inputs.forEach((v, i) => {
+                const { type } = v
+                if (type === 'address') {
+                  assert.include(_addresses, args[i])
+                  assert.isTrue(isAddress(args[i]), `invalid address ${args[i]}`)
+                }
+                if (type === 'address[]') {
+                  assert.includeMembers(_addresses, args[i])
+                }
+              })
+            })
 
-          it(`should have a signature property`, () => {
-            assert.property(decoded, 'signature')
-            if (event.signature) assert.deepEqual(event.signature, decoded.signature)
-          })
+            it(`should have an abi property`, () => {
+              assert.property(decoded, 'abi')
+              if (event.abi) assert.deepEqual(event.abi, decoded.abi)
+            })
 
-          it(`should have an addresses property`, () => {
-            assert.property(decoded, '_addresses')
-            assert.typeOf(decoded._addresses, 'array')
-            if (event._addresses) assert.deepEqual(event._addresses, decoded._addresses)
-          })
+            it(`should have a signature property`, () => {
+              assert.property(decoded, 'signature')
+              if (event.signature) assert.deepEqual(event.signature, decoded.signature)
+            })
 
-          it(`addresses field must contain all addresses`, () => {
-            const { abi, args, _addresses } = decoded
-            abi.inputs.forEach((v, i) => {
-              const { type } = v
-              if (type === 'address') {
-                assert.include(_addresses, args[i])
-              }
-              if (type === 'address[]') {
-                assert.includeMembers(_addresses, args[i])
+            it(`should have an addresses property`, () => {
+              assert.property(decoded, '_addresses')
+              assert.typeOf(decoded._addresses, 'array')
+              if (event._addresses) assert.deepEqual(event._addresses, decoded._addresses)
+            })
+
+            it(`decoded event should include all log properties`, () => {
+              for (let p in tx.logs[i]) {
+                assert.deepEqual(decoded[p], tx.logs[i][p], p)
               }
             })
-          })
 
-          it(`decoded event should include all log properties`, () => {
-            for (let p in tx.logs[i]) {
-              assert.deepEqual(decoded[p], tx.logs[i][p], p)
+            let argsLength = Object.keys(event.args).length
+            it(`should have: ${argsLength} arguments`, function () {
+              assert.equal(argsLength, Object.keys(decoded.args).length)
+            })
+
+            let keys = Object.keys(event.args)
+
+            for (let a in event.args) {
+              let arg = event.args[a]
+              it(`should have: ${a} arg with value: ${arg}`, function () {
+                assert.deepEqual(decoded.args[keys.indexOf(a)], arg)
+              })
             }
-          })
-
-          let argsLength = Object.keys(event.args).length
-          it(`should have: ${argsLength} arguments`, function () {
-            assert.equal(argsLength, Object.keys(decoded.args).length)
-          })
-
-          let keys = Object.keys(event.args)
-
-          for (let a in event.args) {
-            let arg = event.args[a]
-            it(`should have: ${a} arg with value: ${arg}`, function () {
-              assert.deepEqual(decoded.args[keys.indexOf(a)], arg)
-            })
           }
         })
       }
