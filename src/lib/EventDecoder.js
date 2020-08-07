@@ -1,6 +1,6 @@
 import ethAbi from 'ethereumjs-abi'
 import { addSignatureDataToAbi, getSignatureDataFromAbi } from './utils'
-import { remove0x, toBuffer, add0x, bufferToHex } from 'rsk-utils'
+import { remove0x, toBuffer, add0x, bufferToHex } from '@rsksmart/rsk-utils'
 
 function EventDecoder (abi) {
   abi = addSignatureDataToAbi(abi)

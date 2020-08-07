@@ -1,4 +1,4 @@
-import { toBuffer, add0x } from 'rsk-utils'
+import { toBuffer, add0x } from '@rsksmart/rsk-utils'
 import ethAbi from 'ethereumjs-abi'
 
 export default function Contract (abi, { address, nod3 } = {}) {

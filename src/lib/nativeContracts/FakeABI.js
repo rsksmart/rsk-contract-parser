@@ -1,5 +1,5 @@
 
-import { remove0x, add0x, rlp } from 'rsk-utils'
+import { remove0x, add0x, rlp } from '@rsksmart/rsk-utils'
 import { addSignatureDataToAbi } from '../utils'
 import * as btcUtils from '../btcUtils'
 

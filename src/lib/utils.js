@@ -1,4 +1,4 @@
-import { keccak256, add0x } from 'rsk-utils'
+import { keccak256, add0x } from '@rsksmart/rsk-utils'
 import { ABI_SIGNATURE, INTERFACE_ID_BYTES } from './types'
 
 export const setAbi = abi => addSignatureDataToAbi(abi, true)

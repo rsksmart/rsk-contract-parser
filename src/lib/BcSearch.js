@@ -1,5 +1,5 @@
 import { binarySearchNumber } from './utils'
-import { isAddress } from 'rsk-utils/dist/addresses'
+import { isAddress } from '@rsksmart/rsk-utils'
 
 export function BcSearch (nod3) {
   const getBlock = (hashOrNumber) => {

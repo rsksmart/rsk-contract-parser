@@ -1,5 +1,5 @@
 import interfacesIds from './interfacesIds'
-import { includesAll } from 'rsk-utils'
+import { includesAll } from '@rsksmart/rsk-utils'
 import NativeContractsDecoder from './nativeContracts/NativeContractsDecoder'
 import NativeContracts from './nativeContracts/NativeContracts'
 import Contract from './Contract'

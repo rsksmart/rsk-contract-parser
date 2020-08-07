@@ -1,4 +1,4 @@
-import { remove0x, add0x, rlp } from 'rsk-utils'
+import { remove0x, add0x, rlp } from '@rsksmart/rsk-utils'
 import { getSignatureDataFromAbi } from '../utils'
 import FakeAbi from './FakeABI'
 export function NativeContractsEvents ({ bitcoinNetwork } = {}) {

@@ -1,6 +1,6 @@
 import { BcSearch } from '../index'
 import { nod3Connect } from '../lib/nod3Connect'
-import { isAddress } from 'rsk-utils'
+import { isAddress } from '@rsksmart/rsk-utils'
 
 const url = process.env['URL'] || 'http://localhost:4444'
 const address = process.argv[2]

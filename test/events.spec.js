@@ -1,6 +1,6 @@
 import { assert } from 'chai'
 import { ContractParser } from '../src/lib/ContractParser'
-import { isAddress } from 'rsk-utils'
+import { isAddress } from '@rsksmart/rsk-utils'
 import txs from './txs/'
 
 const initConfig = {
