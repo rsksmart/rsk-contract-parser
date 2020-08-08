@@ -40,9 +40,9 @@ export function BcSearch (nod3) {
     let contractAddress = (result) ? result.address : undefined
     return type === 'create' && contractAddress === address
   }
-  const deploymentTx = async (address, { blockNumber, blockTrace, block } = {}) => {
+  const deploymentTx = async (address, { blockNumber, blockTrace, block, highBlock } = {}) => {
     try {
-      blockNumber = blockNumber || await deploymentBlock(address)
+      blockNumber = blockNumber || await deploymentBlock(address, highBlock)
       block = block || await nod3.eth.getBlock(blockNumber, true)
       let transactions = block.transactions.filter(tx => !isAddress(tx.to))
       let transaction = await searchReceipt(transactions, receipt => receipt.contractAddress === address)
