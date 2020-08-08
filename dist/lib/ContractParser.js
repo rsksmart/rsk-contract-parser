@@ -1,5 +1,5 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = exports.ContractParser = void 0;var _interfacesIds = _interopRequireDefault(require("./interfacesIds"));
-var _rskUtils = require("rsk-utils");
+var _rskUtils = require("@rsksmart/rsk-utils");
 var _NativeContractsDecoder = _interopRequireDefault(require("./nativeContracts/NativeContractsDecoder"));
 var _NativeContracts = _interopRequireDefault(require("./nativeContracts/NativeContracts"));
 var _Contract = _interopRequireDefault(require("./Contract"));

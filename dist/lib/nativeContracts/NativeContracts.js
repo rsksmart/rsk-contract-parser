@@ -1,5 +1,5 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.NativeContracts = NativeContracts;exports.default = exports.parseNativeContracts = exports.defaultNativeContracts = void 0;
-var _rskUtils = require("rsk-utils");
+var _rskUtils = require("@rsksmart/rsk-utils");
 
 const defaultNativeContracts = {
   bridge: '0x0000000000000000000000000000000001000006',

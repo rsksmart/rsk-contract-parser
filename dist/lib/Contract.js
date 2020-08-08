@@ -1,4 +1,4 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = Contract;var _rskUtils = require("rsk-utils");
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = Contract;var _rskUtils = require("@rsksmart/rsk-utils");
 var _ethereumjsAbi = _interopRequireDefault(require("ethereumjs-abi"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
 function Contract(abi, { address, nod3 } = {}) {
