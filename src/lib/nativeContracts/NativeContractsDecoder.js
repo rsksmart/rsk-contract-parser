@@ -1,6 +1,6 @@
 import NativeContractsEvents from './NativeContractsEvents'
 import EventDecoder from '../EventDecoder'
-import bridgeAbi from './bridge.json'
+import bridgeAbi from './bridgeAbi'
 import { addSignatureDataToAbi } from '../utils'
 
 export const ABI = addSignatureDataToAbi(bridgeAbi)
