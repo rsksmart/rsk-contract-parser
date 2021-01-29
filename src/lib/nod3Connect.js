@@ -1,4 +1,4 @@
-import Nod3 from 'nod3'
+import Nod3 from '@rsksmart/nod3'
 
 export const nod3Connect = (url) => {
   url = url || process.env['RSK_NODE_URL'] || 'http://localhost:4444'

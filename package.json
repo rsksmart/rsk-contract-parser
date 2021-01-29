@@ -46,10 +46,10 @@
     "openzeppelin-solidity": "^2.4.0"
   },
   "dependencies": {
+    "@rsksmart/nod3": "^0.4.1",
     "@rsksmart/rsk-utils": "^1.1.0",
     "bs58": "^4.0.1",
     "ethereumjs-abi": "^0.6.8",
-    "nod3": "git+https://github.com/rsksmart/nod3.git",
     "secp256k1": "^3.7.1"
   }
 }
