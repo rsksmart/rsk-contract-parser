@@ -85,7 +85,9 @@ export class ContractParser {
         }
         if (v.type === 'address[]') {
           let value = args[i] || []
-          value.forEach(v => _addresses.push(v))
+          if (Array.isArray(value)) { // temp fix to undecoded events
+            value.forEach(v => _addresses.push(v))
+          }
         }
       })
       event._addresses = [...new Set(_addresses)]
