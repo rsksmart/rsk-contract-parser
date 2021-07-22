@@ -23,7 +23,8 @@ const addresses = {
   '0x4626f072c42afed36d7aad7f2ab9fa9e16bdb72a': ['ERC165', 'ERC721', 'ERC721Enumerable', 'ERC721Metadata'],
   '0x1e6d0bad215c6407f552e4d1260e7bae90005ab2': ['ERC165', 'ERC721', 'ERC721Enumerable', 'ERC721Metadata'],
   '0xe59f2877a51e570fbf751a07d50899838e6b6cc7': ['ERC721'],
-  '0x7974f2971e0b5d68f30513615fafec5c451da4d1': ['ERC20', 'ERC677']
+  '0x7974f2971e0b5d68f30513615fafec5c451da4d1': ['ERC20', 'ERC677'],
+  '0x06d164e8d6829e1da028a4f745d330eb764dd3ac': ['ERC165', 'ERC20']
 }
 
 const parser = new ContractParser({ nod3 })
