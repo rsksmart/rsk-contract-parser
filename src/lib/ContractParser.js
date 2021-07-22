@@ -158,9 +158,23 @@ export class ContractParser {
     if (includesAll(methods, ['supportsInterface(bytes4)'])) {
       isErc165 = await this.implementsErc165(contract)
     }
-    let interfaces
-    if (isErc165) interfaces = await this.getInterfacesERC165(contract)
-    else interfaces = this.getInterfacesByMethods(methods)
+
+    const interfacesByErc165 = isErc165 ? await this.getInterfacesERC165(contract) : {
+      ERC20: false,
+      ERC677: false,
+      ERC165: false,
+      ERC721: false,
+      ERC721Enumerable: false,
+      ERC721Metadata: false,
+      ERC721Exists: false
+    }
+    const interfacesByMethods = this.getInterfacesByMethods(methods)
+
+    let interfaces = {}
+    Object.keys(interfacesByErc165).forEach(interfaceId => {
+      interfaces[interfaceId] = interfacesByMethods[interfaceId] || interfacesByErc165[interfaceId]
+    })
+
     interfaces = Object.keys(interfaces)
       .filter(k => interfaces[k] === true)
       .map(t => contractsInterfaces[t] || t)
