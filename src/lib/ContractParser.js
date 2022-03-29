@@ -13,6 +13,7 @@ import {
   soliditySelector,
   soliditySignature
 } from './utils'
+import { remove0x } from '@rsksmart/rsk-utils/dist/strings'
 
 export class ContractParser {
   constructor ({ abi, log, initConfig, nod3 } = {}) {
@@ -160,6 +161,7 @@ export class ContractParser {
     }
     let interfaces
     if (isErc165) interfaces = await this.getInterfacesERC165(contract)
+    else if (this.isEIP1167(txInputData)) interfaces = { EIP1167: true };
     else interfaces = this.getInterfacesByMethods(methods)
     interfaces = Object.keys(interfaces)
       .filter(k => interfaces[k] === true)
@@ -167,7 +169,17 @@ export class ContractParser {
     return { methods, interfaces }
   }
 
-  async getInterfacesERC165 (contract) {
+  getEip1167MasterCopy (bytecode) {
+    const implementationAddress = bytecode.replace('363d3d373d3d3d363d73', '').replace('5af43d82803e903d91602b57fd5bf3', '');
+    return implementationAddress;
+  }
+
+  isEIP1167(bytecode) {
+    const re = new RegExp('^363d3d373d3d3d363d73[a-f0-9]{40}5af43d82803e903d91602b57fd5bf3$', 'i');
+    return re.test(remove0x(bytecode));
+  }
+
+  async getInterfacesERC165(contract) {
     let ifaces = {}
     let keys = Object.keys(interfacesIds)
     for (let i of keys) {
