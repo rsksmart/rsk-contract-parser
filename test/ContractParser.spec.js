@@ -5,6 +5,9 @@ import nod3 from '../src/lib/nod3Connect'
 const contracts = [
   '0xebea27d994371cd0cb9896ae4c926bc5221f6317']
 
+const proxyContract = "0xc7bC8A9523e04CD82cb19f5D95E38d0258EEf810";
+const masterProxyContract = "0x2a37eedf9724f1c748b5cf88594bd1d29612b7f9";
+
 const parser = new ContractParser({ nod3 })
 
 describe('# Network', function () {
@@ -24,4 +27,12 @@ describe('Contract parser', function () {
       console.log({ info })
     })
   }
+
+  it('should return the master of proxy contract',async ()=>{
+    const code = await nod3.eth.getCode(proxyContract)
+    //let info = await parser.getContractInfo(code, contract)
+    const masterCopy = parser.getMasterCopy(code);
+    assert.equal(masterCopy,masterProxyContract);
+    //assert.includeMembers(interfaces, addresses[address])
+  });
 })
