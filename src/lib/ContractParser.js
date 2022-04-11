@@ -14,6 +14,7 @@ import {
   soliditySignature
 } from './utils'
 import { remove0x } from '@rsksmart/rsk-utils/dist/strings'
+import { EIP_1167_PREFIX, EIP_1167_SUFFIX } from './Constants';
 
 export class ContractParser {
   constructor ({ abi, log, initConfig, nod3 } = {}) {
@@ -170,12 +171,12 @@ export class ContractParser {
   }
 
   getEip1167MasterCopy (bytecode) {
-    const implementationAddress = bytecode.replace('363d3d373d3d3d363d73', '').replace('5af43d82803e903d91602b57fd5bf3', '');
+    const implementationAddress = bytecode.replace(EIP_1167_PREFIX, '').replace(EIP_1167_SUFFIX, '');
     return implementationAddress;
   }
 
   isEIP1167(bytecode) {
-    const re = new RegExp('^363d3d373d3d3d363d73[a-f0-9]{40}5af43d82803e903d91602b57fd5bf3$', 'i');
+    const re = new RegExp(`^${EIP_1167_PREFIX}[a-f0-9]{40}${EIP_1167_SUFFIX}$`, 'i');
     return re.test(remove0x(bytecode));
   }
 
