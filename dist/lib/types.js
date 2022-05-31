@@ -18,7 +18,8 @@ const contractsInterfaces = {
   ERC20: 'ERC20',
   ERC677: 'ERC677',
   ERC165: 'ERC165',
-  ERC721: 'ERC721' };exports.contractsInterfaces = contractsInterfaces;
+  ERC721: 'ERC721',
+  EIP1167: 'EIP1167' };exports.contractsInterfaces = contractsInterfaces;
 
 
 const ci = contractsInterfaces;

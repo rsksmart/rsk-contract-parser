@@ -1,9 +1,16 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _ethereumjsAbi = _interopRequireDefault(require("ethereumjs-abi"));
-var _utils = require("./utils");
-var _rskUtils = require("@rsksmart/rsk-utils");function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _utils = require("./utils");
+var _rskUtils = require("@rsksmart/rsk-utils");
+var _web3EthAbi = _interopRequireDefault(require("web3-eth-abi"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
 function EventDecoder(abi) {
   abi = (0, _utils.addSignatureDataToAbi)(abi);
+
+  const rawDecode = (types, data) => {
+    const decoded = _web3EthAbi.default.decodeParameters(types, data);
+    delete decoded['__length__'];
+    const arrDecoded = Object.keys(decoded).map(key => decoded[key]);
+    return arrDecoded;
+  };
 
   const formatDecoded = decoded => {
     return (0, _rskUtils.add0x)(Buffer.isBuffer(decoded) ? (0, _rskUtils.bufferToHex)(decoded) : decoded.toString(16));
@@ -22,20 +29,31 @@ function EventDecoder(abi) {
   };
 
   const decodeElement = (data, types) => {
-    let decoded = _ethereumjsAbi.default.rawDecode(types, (0, _rskUtils.toBuffer)(data));
-    if (Array.isArray(decoded)) {
-      decoded = decoded.map(d => formatDecoded(d));
-      if (decoded.length === 1) decoded = decoded.join();
-    } else {
-      decoded = formatDecoded(decoded);
+    try {
+      let decoded = rawDecode(types, data);
+      if (Array.isArray(decoded)) {
+        decoded = decoded.map(d => formatDecoded(d));
+        if (decoded.length === 1) decoded = decoded.join();
+      } else {
+        decoded = formatDecoded(decoded);
+      }
+      return decoded;
+    } catch (e) {
+      console.log(e);
+      return '';
     }
-    return decoded;
   };
 
   const decodeData = (data, types) => {
-    let decoded = _ethereumjsAbi.default.rawDecode(types, (0, _rskUtils.toBuffer)(data));
-    return decoded.map(d => formatDecoded(d));
+    try {
+      let decoded = rawDecode(types, data);
+      return decoded.map(d => formatDecoded(d));
+    } catch (e) {
+      console.log(e);
+      return [''];
+    }
   };
+
   const decodeLog = log => {
     log = Object.assign({}, log);
     const { eventABI, topics } = getEventAbi(log.topics);

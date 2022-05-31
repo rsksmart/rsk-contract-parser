@@ -1,0 +1,2 @@
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.EIP_1167_SUFFIX = exports.EIP_1167_PREFIX = void 0;const EIP_1167_PREFIX = '363d3d373d3d3d363d73';exports.EIP_1167_PREFIX = EIP_1167_PREFIX;
+const EIP_1167_SUFFIX = '5af43d82803e903d91602b57fd5bf3';exports.EIP_1167_SUFFIX = EIP_1167_SUFFIX;

@@ -1,14 +1,12 @@
 import { addSignatureDataToAbi, getSignatureDataFromAbi } from './utils'
 import { remove0x, add0x, bufferToHex } from '@rsksmart/rsk-utils'
-import Web3Eth from 'web3-eth'
+import Web3EthAbi from 'web3-eth-abi'
 
 function EventDecoder (abi) {
   abi = addSignatureDataToAbi(abi)
 
-  const eth = new Web3Eth('ws://localhost:8546');
-
   const rawDecode = (types,data) =>{
-   const decoded = eth.abi.decodeParameters(types,data)
+   const decoded = Web3EthAbi.decodeParameters(types,data)
    delete decoded['__length__']
    const arrDecoded = Object.keys(decoded).map(key => decoded[key])
    return arrDecoded
