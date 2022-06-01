@@ -50,6 +50,7 @@
     "@rsksmart/rsk-utils": "^1.1.0",
     "bs58": "^4.0.1",
     "ethereumjs-abi": "^0.6.8",
-    "secp256k1": "^3.7.1"
+    "secp256k1": "^3.7.1",
+    "web3-eth-abi": "^1.7.3"
   }
 }
