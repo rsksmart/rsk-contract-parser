@@ -21,9 +21,15 @@ export function BcSearch (nod3) {
   }
 
   const isContractAtBlock = async (address, blockNumber) => {
+    console.log("isContractAtBlock executing ");
+    console.log("address=> ",address);
+    console.log("blockNumber=> ",blockNumber);
     let code = await nod3.eth.getCode(address, blockNumber)
+    console.log("code=> ",code);
     code = parseInt(code)
-    return !isNaN(code) && code > 0
+    const isCode = !isNaN(code) && code > 0;
+    console.log("isCode=> ",isCode);
+    return isCode;
   }
 
   const deploymentBlock = (address, highBlock, lowBlock) => {
