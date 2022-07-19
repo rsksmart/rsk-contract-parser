@@ -22,13 +22,10 @@ function BcSearch(nod3) {
 
   const isContractAtBlock = async (address, blockNumber) => {
     console.log("isContractAtBlock executing ");
-    console.log("address=> ", address);
-    console.log("blockNumber=> ", blockNumber);
     let code = await nod3.eth.getCode(address, blockNumber);
-    console.log("code=> ", code);
     code = parseInt(code);
     const isCode = !isNaN(code) && code > 0;
-    console.log("isCode=> ", isCode);
+    console.log("code=> ", code, '*******', address, '******', blockNumber, 'isCode ', isCode);
     return isCode;
   };
 
