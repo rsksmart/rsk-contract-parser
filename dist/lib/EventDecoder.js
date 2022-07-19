@@ -1,12 +1,12 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _utils = require("./utils");
 var _rskUtils = require("@rsksmart/rsk-utils");
-var _web3EthAbi = _interopRequireDefault(require("web3-eth-abi"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _ethereumjsAbi = _interopRequireDefault(require("ethereumjs-abi"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
 function EventDecoder(abi) {
   abi = (0, _utils.addSignatureDataToAbi)(abi);
 
   const rawDecode = (types, data) => {
-    const decoded = _web3EthAbi.default.decodeParameters(types, data);
+    const decoded = Web3EthAbi.decodeParameters(types, data);
     delete decoded['__length__'];
     const arrDecoded = Object.keys(decoded).map(key => decoded[key]);
     return arrDecoded;
@@ -29,29 +29,19 @@ function EventDecoder(abi) {
   };
 
   const decodeElement = (data, types) => {
-    try {
-      let decoded = rawDecode(types, data);
-      if (Array.isArray(decoded)) {
-        decoded = decoded.map(d => formatDecoded(d));
-        if (decoded.length === 1) decoded = decoded.join();
-      } else {
-        decoded = formatDecoded(decoded);
-      }
-      return decoded;
-    } catch (e) {
-      console.log(e);
-      return '';
+    let decoded = _ethereumjsAbi.default.rawDecode(types, toBuffer(data));
+    if (Array.isArray(decoded)) {
+      decoded = decoded.map(d => formatDecoded(d));
+      if (decoded.length === 1) decoded = decoded.join();
+    } else {
+      decoded = formatDecoded(decoded);
     }
+    return decoded;
   };
 
   const decodeData = (data, types) => {
-    try {
-      let decoded = rawDecode(types, data);
-      return decoded.map(d => formatDecoded(d));
-    } catch (e) {
-      console.log(e);
-      return [''];
-    }
+    let decoded = _ethereumjsAbi.default.rawDecode(types, toBuffer(data));
+    return decoded.map(d => formatDecoded(d));
   };
 
   const decodeLog = log => {

@@ -1,16 +1,16 @@
 import { addSignatureDataToAbi, getSignatureDataFromAbi } from './utils'
 import { remove0x, add0x, bufferToHex } from '@rsksmart/rsk-utils'
-import Web3EthAbi from 'web3-eth-abi'
+import ethAbi from 'ethereumjs-abi'
 
 function EventDecoder (abi) {
   abi = addSignatureDataToAbi(abi)
 
   const rawDecode = (types,data) =>{
-   const decoded = Web3EthAbi.decodeParameters(types,data)
-   delete decoded['__length__']
-   const arrDecoded = Object.keys(decoded).map(key => decoded[key])
-   return arrDecoded
-  }
+    const decoded = Web3EthAbi.decodeParameters(types,data)
+    delete decoded['__length__']
+    const arrDecoded = Object.keys(decoded).map(key => decoded[key])
+    return arrDecoded
+   }
 
   const formatDecoded = (decoded) => {
     return add0x(Buffer.isBuffer(decoded) ? bufferToHex(decoded) : decoded.toString(16))
@@ -29,29 +29,19 @@ function EventDecoder (abi) {
   }
 
   const decodeElement = (data, types) => {
-    try{
-      let decoded = rawDecode(types,data)
-      if (Array.isArray(decoded)) {
-        decoded = decoded.map(d => formatDecoded(d))
-        if (decoded.length === 1) decoded = decoded.join()
-      } else {
-        decoded = formatDecoded(decoded)
-      }
-      return decoded
-    }catch(e){
-      console.log(e)
-      return ''
+    let decoded = ethAbi.rawDecode(types, toBuffer(data))
+    if (Array.isArray(decoded)) {
+      decoded = decoded.map(d => formatDecoded(d))
+      if (decoded.length === 1) decoded = decoded.join()
+    } else {
+      decoded = formatDecoded(decoded)
     }
+      return decoded
   }
 
   const decodeData = (data, types) => {
-    try{
-      let decoded = rawDecode(types,data)
-      return decoded.map(d => formatDecoded(d))
-    }catch(e){
-      console.log(e)
-      return ['']
-    }
+    let decoded = ethAbi.rawDecode(types, toBuffer(data))
+    return decoded.map(d => formatDecoded(d))
   }
   
   const decodeLog = log => {
