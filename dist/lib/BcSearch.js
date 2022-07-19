@@ -42,12 +42,20 @@ function BcSearch(nod3) {
   };
   const deploymentTx = async (address, { blockNumber, blockTrace, block, highBlock } = {}) => {
     console.log('STARTING deploymentTx');
+    console.log('address=> ', address);
+    console.log('blockNumber=> ', blockNumber);
+    console.log('blockTrace=> ', blockTrace);
+    console.log('block=> ', block);
+    console.log('highBlock=> ', highBlock);
     try {
       blockNumber = blockNumber || (await deploymentBlock(address, highBlock));
-      console.log();
+      console.log('deploymentBlock=> ', blockNumber);
       block = block || (await nod3.eth.getBlock(blockNumber, true));
+      console.log('getBlock=> ', block);
       let transactions = block.transactions.filter(tx => !(0, _rskUtils.isAddress)(tx.to));
+      console.log('transactions=> ', transactions);
       let transaction = await searchReceipt(transactions, receipt => receipt.contractAddress === address);
+      console.log('transaction=> ', transaction);
       if (!transaction) {// internal transactions
         blockTrace = blockTrace || (await nod3.trace.block(block.hash));
         let internalTx = blockTrace.find(trace => isItxDeployment(address, trace));
