@@ -41,8 +41,10 @@ function BcSearch(nod3) {
     return type === 'create' && contractAddress === address;
   };
   const deploymentTx = async (address, { blockNumber, blockTrace, block, highBlock } = {}) => {
+    console.log('STARTING deploymentTx');
     try {
       blockNumber = blockNumber || (await deploymentBlock(address, highBlock));
+      console.log();
       block = block || (await nod3.eth.getBlock(blockNumber, true));
       let transactions = block.transactions.filter(tx => !(0, _rskUtils.isAddress)(tx.to));
       let transaction = await searchReceipt(transactions, receipt => receipt.contractAddress === address);
