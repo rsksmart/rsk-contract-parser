@@ -32,7 +32,7 @@ function EventDecoder(abi) {
     try {
       let decoded = rawDecode(types, data);
       if (Array.isArray(decoded)) {
-        decoded = decoded.map(d => formatDecoded(d).toLowerCase());
+        decoded = decoded.map(d => formatDecoded(d));
         if (decoded.length === 1) decoded = decoded.join();
       } else {
         decoded = formatDecoded(decoded);
@@ -47,7 +47,7 @@ function EventDecoder(abi) {
   const decodeData = (data, types) => {
     try {
       let decoded = rawDecode(types, data);
-      return decoded.map(d => formatDecoded(d).toLowerCase());
+      return decoded.map(d => formatDecoded(d));
     } catch (e) {
       console.log(e);
       return [''];
