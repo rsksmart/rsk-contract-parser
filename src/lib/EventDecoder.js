@@ -47,7 +47,7 @@ function EventDecoder (abi) {
   const decodeData = (data, types) => {
     try{
       let decoded = rawDecode(types,data)
-      return decoded.map(d => formatDecoded(d).toLowerCase())
+      return decoded.map(d => formatDecoded(d)
     }catch(e){
       console.log(e)
       return ['']
