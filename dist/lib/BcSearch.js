@@ -21,11 +21,9 @@ function BcSearch(nod3) {
   };
 
   const isContractAtBlock = async (address, blockNumber) => {
-    console.log("isContractAtBlock executing ");
     let code = await nod3.eth.getCode(address, blockNumber);
     code = parseInt(code);
     const isCode = !isNaN(code) && code > 0;
-    console.log("code=> ", code, '*******', address, '******', blockNumber, 'isCode ', isCode);
     return isCode;
   };
 
@@ -70,7 +68,15 @@ function BcSearch(nod3) {
       return Promise.reject(err);
     }
   };
+  // STARTING deploymentTx
+  // address=>  0x1261d5872d56e2Ab61B3C68451D015b752105027
+  // blockNumber=>  4393586
+  // blockTrace=>  undefined
+  // block=>  undefined
+  // highBlock=>  undefined
+  // deploymentBlock=>  4393586
 
+  // Block fetch error Error: Missing deployment data for 0x1261d5872d56e2Ab61B3C68451D015b752105027
   return Object.freeze({ block, deploymentBlock, deploymentTx, isItxDeployment });
 }var _default =
 
