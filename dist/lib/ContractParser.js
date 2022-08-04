@@ -6,15 +6,13 @@ var _Contract = _interopRequireDefault(require("./Contract"));
 var _EventDecoder = _interopRequireDefault(require("./EventDecoder"));
 var _Abi = _interopRequireDefault(require("./Abi"));
 var _types = require("./types");
-var _utils = require("./utils");
+var _utils = require("./utils");function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
 
 
 
 
 
-var _strings = require("@rsksmart/rsk-utils/dist/strings");
-var _Constants = require("./Constants");function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
 class ContractParser {
   constructor({ abi, log, initConfig, nod3 } = {}) {
@@ -162,22 +160,11 @@ class ContractParser {
     }
     let interfaces;
     if (isErc165) interfaces = await this.getInterfacesERC165(contract);else
-    if (this.isEIP1167(txInputData)) interfaces = { EIP1167: true };else
     interfaces = this.getInterfacesByMethods(methods);
     interfaces = Object.keys(interfaces).
     filter(k => interfaces[k] === true).
     map(t => _types.contractsInterfaces[t] || t);
     return { methods, interfaces };
-  }
-
-  getEip1167MasterCopy(bytecode) {
-    const implementationAddress = bytecode.replace(_Constants.EIP_1167_PREFIX, '').replace(_Constants.EIP_1167_SUFFIX, '');
-    return implementationAddress;
-  }
-
-  isEIP1167(bytecode) {
-    const re = new RegExp(`^${_Constants.EIP_1167_PREFIX}[a-f0-9]{40}${_Constants.EIP_1167_SUFFIX}$`, 'i');
-    return re.test((0, _strings.remove0x)(bytecode));
   }
 
   async getInterfacesERC165(contract) {
