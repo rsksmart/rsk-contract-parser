@@ -18,8 +18,7 @@ export const contractsInterfaces = {
   ERC20: 'ERC20',
   ERC677: 'ERC677',
   ERC165: 'ERC165',
-  ERC721: 'ERC721',
-  EIP1167: 'EIP1167'
+  ERC721: 'ERC721'
 }
 
 const ci = contractsInterfaces
