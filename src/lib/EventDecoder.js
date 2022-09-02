@@ -1,13 +1,10 @@
 import ethAbi from 'ethereumjs-abi'
 import { addSignatureDataToAbi, getSignatureDataFromAbi } from './utils'
 import { remove0x, toBuffer, add0x, bufferToHex } from '@rsksmart/rsk-utils'
+import { AbiCoder, Interface } from '@ethersproject/abi'
 
-function EventDecoder (abi) {
-  abi = addSignatureDataToAbi(abi)
-
-  const formatDecoded = (decoded) => {
-    return add0x(Buffer.isBuffer(decoded) ? bufferToHex(decoded) : decoded.toString(16))
-  }
+function EventDecoder (abi, logger) {
+  const contractInterface = new Interface(addSignatureDataToAbi(abi))
 
   const getEventAbi = topics => {
     topics = [...topics]
@@ -21,38 +18,51 @@ function EventDecoder (abi) {
     return { eventABI, topics }
   }
 
-  const decodeElement = (data, types) => {
-    let decoded = ethAbi.rawDecode(types, toBuffer(data))
+  const formatElement = (type, decoded) => {
+    if (decoded._isIndexed) return { _isIndexed: true, hash: decoded.hash }
+    if (decoded._isBigNumber) {
+      return decoded.toHexString()
+    }
+    const res = add0x(Buffer.isBuffer(decoded) ? bufferToHex(decoded) : decoded.toString(16))
+    if(type === 'address') return res.toLowerCase()
+    return res
+  }
+
+  const encodeElement = (type, decoded) => {
     if (Array.isArray(decoded)) {
-      decoded = decoded.map(d => formatDecoded(d))
+      decoded = decoded.map(d => formatElement(type, d))
       if (decoded.length === 1) decoded = decoded.join()
     } else {
-      decoded = formatDecoded(decoded)
+      decoded = formatElement(type, decoded)
     }
     return decoded
   }
 
-  const decodeData = (data, types) => {
-    let decoded = ethAbi.rawDecode(types, toBuffer(data))
-    return decoded.map(d => formatDecoded(d))
-  }
   const decodeLog = log => {
-    log = Object.assign({}, log)
-    const { eventABI, topics } = getEventAbi(log.topics)
-    const { address } = log
-    if (!eventABI) return log
-    const { name } = eventABI
-    const { signature } = getSignatureDataFromAbi(eventABI)
-    const { inputs } = eventABI
-    const indexedInputs = inputs.filter(i => i.indexed === true)
-    let decodedTopics = topics.map((topic, index) => decodeElement(topic, [indexedInputs[index].type]))
-    const decodedData = decodeData(log.data, inputs.filter(i => i.indexed === false).map(i => i.type))
-    const args = []
-    for (let input of inputs) {
-      args.push((input.indexed) ? decodedTopics.shift() : decodedData.shift())
+    try {
+      const { eventFragment, name, args, topic } = contractInterface.parseLog(log)
+
+      const { address } = log
+
+      const parsedArgs = []
+
+      for (const i in eventFragment.inputs) parsedArgs.push(
+        encodeElement(eventFragment.inputs[i].type, args[i])
+      )
+
+      return Object.assign({}, log, {
+        signature: remove0x(topic),
+        event: name,
+        address,
+        args: parsedArgs,
+        abi: JSON.parse(eventFragment.format('json'))
+      })
+    } catch (e) {
+      logger.error(e)
+      return log
     }
-    return Object.assign(log, { event: name, address, args, abi: eventABI, signature })
   }
+
   return Object.freeze({ decodeLog, getEventAbi })
 }
 

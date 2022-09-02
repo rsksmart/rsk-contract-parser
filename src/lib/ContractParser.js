@@ -97,7 +97,7 @@ export class ContractParser {
 
   decodeLogs (logs, abi) {
     abi = abi || this.abi
-    const eventDecoder = EventDecoder(abi)
+    const eventDecoder = EventDecoder(abi, this.log)
     if (!this.nativeContracts || !this.nativeContractsEvents) {
       throw new Error(`Native contracts decoder is missing, check the value of netId:${this.netId}`)
     }

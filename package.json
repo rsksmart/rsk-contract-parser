@@ -6,6 +6,7 @@
   "scripts": {
     "lint": "npx eslint src/**/* --quiet",
     "test": "npx mocha",
+    "test:local": "npx mocha test/compiler.spec.js test/events.spec.js test/nativeContracts.spec.js",
     "build": "npx babel src -d dist --copy-files",
     "abi": "npx babel-node --presets  @babel/preset-env src/lib/compileJsonAbis.js"
   },
@@ -46,6 +47,7 @@
     "openzeppelin-solidity": "^2.4.0"
   },
   "dependencies": {
+    "@ethersproject/abi": "^5.7.0",
     "@rsksmart/nod3": "^0.4.1",
     "@rsksmart/rsk-utils": "^1.1.0",
     "bs58": "^4.0.1",

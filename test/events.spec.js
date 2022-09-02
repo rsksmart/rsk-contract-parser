@@ -55,13 +55,18 @@ describe('# decode events', function () {
             it(`addresses field must contain all addresses`, () => {
               const { abi, args, _addresses } = decoded
               abi.inputs.forEach((v, i) => {
-                const { type } = v
+                const { type, indexed } = v
                 if (type === 'address') {
                   assert.include(_addresses, args[i])
                   assert.isTrue(isAddress(args[i]), `invalid address ${args[i]}`)
                 }
                 if (type === 'address[]') {
-                  assert.includeMembers(_addresses, args[i])
+                  if (!indexed) {
+                    assert.includeMembers(_addresses, args[i])
+                  } else {
+                    assert.hasAllKeys(args[i], ['hash', '_isIndexed'])
+                    assert.deepEqual(args[i]._isIndexed, true)
+                  }
                 }
               })
             })
