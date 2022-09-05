@@ -1,7 +1,6 @@
-import ethAbi from 'ethereumjs-abi'
 import { addSignatureDataToAbi, getSignatureDataFromAbi } from './utils'
-import { remove0x, toBuffer, add0x, bufferToHex } from '@rsksmart/rsk-utils'
-import { AbiCoder, Interface } from '@ethersproject/abi'
+import { remove0x, add0x, bufferToHex } from '@rsksmart/rsk-utils'
+import { Interface } from '@ethersproject/abi'
 
 function EventDecoder (abi, logger) {
   const contractInterface = new Interface(addSignatureDataToAbi(abi))

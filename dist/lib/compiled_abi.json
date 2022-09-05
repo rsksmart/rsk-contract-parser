@@ -7450,36 +7450,6 @@
         "type": "address"
       },
       {
-        "name": "interfaceId",
-        "type": "bytes4"
-      }
-    ],
-    "name": "supportsInterface",
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function",
-    "__signatureData": {
-      "method": "supportsInterface(address,bytes4)",
-      "signature": "d905700708d92a2c508e53fc47c1f4f3376feb686c0c8272b33827f8f33874a3",
-      "index": [],
-      "indexed": 0,
-      "eventSignature": null
-    }
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "name": "account",
-        "type": "address"
-      },
-      {
         "name": "interfaceIds",
         "type": "bytes4[]"
       }
@@ -9122,32 +9092,6 @@
     "__signatureData": {
       "method": "allowance(address,address)",
       "signature": "dd62ed3e90e97b3d417db9c0c7522647811bafca5afc6694f143588d255fdfb4",
-      "index": [],
-      "indexed": 0,
-      "eventSignature": null
-    }
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "name": "interfaceID",
-        "type": "bytes4"
-      }
-    ],
-    "name": "supportsInterface",
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function",
-    "__signatureData": {
-      "method": "supportsInterface(bytes4)",
-      "signature": "01ffc9a7a5cef8baa21ed3c5c0d7e23accb804b619e9333b597f47a0d84076e2",
       "index": [],
       "indexed": 0,
       "eventSignature": null

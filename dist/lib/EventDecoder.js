@@ -1,7 +1,6 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _ethereumjsAbi = _interopRequireDefault(require("ethereumjs-abi"));
-var _utils = require("./utils");
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _utils = require("./utils");
 var _rskUtils = require("@rsksmart/rsk-utils");
-var _abi = require("@ethersproject/abi");function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _abi = require("@ethersproject/abi");
 
 function EventDecoder(abi, logger) {
   const contractInterface = new _abi.Interface((0, _utils.addSignatureDataToAbi)(abi));
