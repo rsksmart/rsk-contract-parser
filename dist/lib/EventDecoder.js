@@ -23,7 +23,7 @@ function EventDecoder(abi, logger) {
       return decoded.toHexString();
     }
     const res = (0, _rskUtils.add0x)(Buffer.isBuffer(decoded) ? (0, _rskUtils.bufferToHex)(decoded) : decoded.toString(16));
-    if (type === 'address') return res.toLowerCase();
+    if (type === 'address' || type === 'address[]') return res.toLowerCase();
     return res;
   };
 

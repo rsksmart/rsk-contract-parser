@@ -23,7 +23,7 @@ function EventDecoder (abi, logger) {
       return decoded.toHexString()
     }
     const res = add0x(Buffer.isBuffer(decoded) ? bufferToHex(decoded) : decoded.toString(16))
-    if(type === 'address') return res.toLowerCase()
+    if(type === 'address' || type === 'address[]') return res.toLowerCase()
     return res
   }
 

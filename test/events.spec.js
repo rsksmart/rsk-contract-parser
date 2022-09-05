@@ -60,13 +60,9 @@ describe('# decode events', function () {
                   assert.include(_addresses, args[i])
                   assert.isTrue(isAddress(args[i]), `invalid address ${args[i]}`)
                 }
-                if (type === 'address[]') {
-                  if (!indexed) {
-                    assert.includeMembers(_addresses, args[i])
-                  } else {
-                    assert.hasAllKeys(args[i], ['hash', '_isIndexed'])
-                    assert.deepEqual(args[i]._isIndexed, true)
-                  }
+                if (type === 'address[]' && indexed) {
+                  assert.hasAllKeys(args[i], ['hash', '_isIndexed'])
+                  assert.deepEqual(args[i]._isIndexed, true)
                 }
               })
             })

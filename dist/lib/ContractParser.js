@@ -87,6 +87,12 @@ class ContractParser {
           let value = args[i] || [];
           if (Array.isArray(value)) {// temp fix to undecoded events
             value.forEach(v => _addresses.push(v));
+          } else {
+            let i = 0;
+            while (2 + (i + 1) * 40 <= value.length) {
+              _addresses.push('0x' + value.slice(2 + i * 40, 2 + (i + 1) * 40));
+              i++;
+            }
           }
         }
       });
