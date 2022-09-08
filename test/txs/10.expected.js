@@ -26,80 +26,69 @@ export default {
           '0xd5ff7b56a6b1bdf0e086e3eb950c50e392640280b04ef3b44616f1e67f9e3cd0',
           '0xa36085f69e2889c224210f603d836748e7dc0088',
           '0x170346689cc312d8e19959bc68c3ad03e72c9850',
-          '0x44598f17d36550500',
+          '0x044598f17d36550500',
           'LINK',
           '0x1c0838a4b207ac67c10c120099fb33301d9c946239dc8742d165c298fc8dcea3',
           '0x90c0f24295b0261eb20440c77aba0b67c7026b2625a260074016bdfca5699a81',
           '0x2',
           '0x12',
-          '0x1'
+          '0x01'
         ],
         'abi': {
           'anonymous': false,
           'inputs': [
             {
               'indexed': true,
-              'internalType': 'address',
               'name': 'sender',
               'type': 'address'
             },
             {
               'indexed': true,
-              'internalType': 'bytes32',
               'name': 'transactionId',
               'type': 'bytes32'
             },
             {
               'indexed': false,
-              'internalType': 'address',
               'name': 'originalTokenAddress',
               'type': 'address'
             },
             {
               'indexed': false,
-              'internalType': 'address',
               'name': 'receiver',
               'type': 'address'
             },
             {
               'indexed': false,
-              'internalType': 'uint256',
               'name': 'amount',
               'type': 'uint256'
             },
             {
               'indexed': false,
-              'internalType': 'string',
               'name': 'symbol',
               'type': 'string'
             },
             {
               'indexed': false,
-              'internalType': 'bytes32',
               'name': 'blockHash',
               'type': 'bytes32'
             },
             {
               'indexed': true,
-              'internalType': 'bytes32',
               'name': 'transactionHash',
               'type': 'bytes32'
             },
             {
               'indexed': false,
-              'internalType': 'uint32',
               'name': 'logIndex',
               'type': 'uint32'
             },
             {
               'indexed': false,
-              'internalType': 'uint8',
               'name': 'decimals',
               'type': 'uint8'
             },
             {
               'indexed': false,
-              'internalType': 'uint256',
               'name': 'granularity',
               'type': 'uint256'
             }
@@ -115,7 +104,7 @@ export default {
         ],
         'eventId': '00fcaba00e0005b1939b94267283a68f',
         'timestamp': 1595616049,
-        'txStatus': '0x1'
+        'txStatus': '0x01'
       },
       {
         'logIndex': 1,
@@ -133,7 +122,7 @@ export default {
         'abi': {},
         'eventId': '00fcaba00e0015b1939b94267283a68f',
         'timestamp': 1595616049,
-        'txStatus': '0x1',
+        'txStatus': '0x01',
         'event': null
       },
       {
@@ -152,7 +141,7 @@ export default {
         'abi': {},
         'eventId': '00fcaba00e0025b1939b94267283a68f',
         'timestamp': 1595616049,
-        'txStatus': '0x1',
+        'txStatus': '0x01',
         'event': null
       },
       {
@@ -171,7 +160,7 @@ export default {
         'abi': {},
         'eventId': '00fcaba00e0035b1939b94267283a68f',
         'timestamp': 1595616049,
-        'txStatus': '0x1',
+        'txStatus': '0x01',
         'event': null
       },
       {
@@ -195,7 +184,6 @@ export default {
           'inputs': [
             {
               'indexed': true,
-              'internalType': 'bytes32',
               'name': 'transactionId',
               'type': 'bytes32'
             }
@@ -207,7 +195,7 @@ export default {
         '_addresses': [],
         'eventId': '00fcaba00e0045b1939b94267283a68f',
         'timestamp': 1595616049,
-        'txStatus': '0x1'
+        'txStatus': '0x01'
       }
     ]
   }

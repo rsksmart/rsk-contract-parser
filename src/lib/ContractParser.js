@@ -87,6 +87,12 @@ export class ContractParser {
           let value = args[i] || []
           if (Array.isArray(value)) { // temp fix to undecoded events
             value.forEach(v => _addresses.push(v))
+          } else {
+            let i = 0
+            while (2 + (i+1) * 40 <= value.length) {
+              _addresses.push('0x' + value.slice(2 + i * 40, 2 + (i+1) * 40))
+              i++
+            }
           }
         }
       })
@@ -97,7 +103,7 @@ export class ContractParser {
 
   decodeLogs (logs, abi) {
     abi = abi || this.abi
-    const eventDecoder = EventDecoder(abi)
+    const eventDecoder = EventDecoder(abi, this.log)
     if (!this.nativeContracts || !this.nativeContractsEvents) {
       throw new Error(`Native contracts decoder is missing, check the value of netId:${this.netId}`)
     }
