@@ -14,6 +14,17 @@ var _utils = require("./utils");function _interopRequireDefault(obj) {return obj
 
 
 
+function mapInterfacesToERCs(interfaces) {
+  interfaces = Object.keys(interfaces).
+  filter(k => interfaces[k] === true).
+  map(t => _types.contractsInterfaces[t] || t);
+  return interfaces;
+}
+
+function hasMethodSelector(txInputData, selector) {
+  return selector && txInputData ? txInputData.includes(selector) : null;
+}
+
 class ContractParser {
   constructor({ abi, log, initConfig, nod3 } = {}) {
     initConfig = initConfig || {};
@@ -147,17 +158,36 @@ class ContractParser {
     }, {});
   }
 
-  hasMethodSelector(txInputData, selector) {
-    return selector && txInputData ? txInputData.includes(selector) : null;
-  }
+
 
   getMethodsBySelectors(txInputData) {
     let methods = this.getMethodsSelectors();
     return Object.keys(methods).
-    filter(method => this.hasMethodSelector(txInputData, methods[method]) === true);
+    filter(method => hasMethodSelector(txInputData, methods[method]) === true);
   }
 
   async getContractInfo(txInputData, contract) {
+    let { interfaces, methods } = await this.getContractImplementedInterfaces(txInputData, contract);
+
+    interfaces = mapInterfacesToERCs(interfaces);
+    return { methods, interfaces };
+  }
+
+  async getContractInfoIfProxy(contractAddress) {
+    const { isUpgradeable, impContractAddress } = await this.checkForUpgradeableContract(contractAddress);
+    if (isUpgradeable) {
+      // manual check required
+      const proxyContractBytecode = await this.getContractCodeFromNode(impContractAddress);
+      const methods = this.getMethodsBySelectors(proxyContractBytecode);
+      let interfaces = this.getInterfacesByMethods(methods);
+
+      interfaces = mapInterfacesToERCs(interfaces);
+      return { methods, interfaces };
+    }
+    return { methods: [], interfaces: [] };
+  }
+
+  async getContractImplementedInterfaces(txInputData, contract) {
     let methods = this.getMethodsBySelectors(txInputData);
     let isErc165 = false;
     //  skip non-erc165 contracts
@@ -165,12 +195,31 @@ class ContractParser {
       isErc165 = await this.implementsErc165(contract);
     }
     let interfaces;
-    if (isErc165) interfaces = await this.getInterfacesERC165(contract);else
-    interfaces = this.getInterfacesByMethods(methods);
-    interfaces = Object.keys(interfaces).
-    filter(k => interfaces[k] === true).
-    map(t => _types.contractsInterfaces[t] || t);
+    if (isErc165) {
+      interfaces = await this.getInterfacesERC165(contract);
+    } else {
+      interfaces = this.getInterfacesByMethods(methods);
+    }
+
     return { methods, interfaces };
+  }
+
+  async checkForUpgradeableContract(contractAddress) {
+    // check For ERC1967
+    // https://eips.ethereum.org/EIPS/eip-1967
+    // 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc storage address where the implementation address is stored
+    const storedValue = await this.nod3.eth.getStorageAt(contractAddress, '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc');
+    const isUpgradeable = storedValue !== '0x0';
+    if (isUpgradeable) {
+      const impContractAddress = `0x${storedValue.slice(-40)}`; // extract contract address
+      return { isUpgradeable, impContractAddress };
+    } else {
+      return { isUpgradeable, impContractAddress: storedValue };
+    }
+  }
+
+  async getContractCodeFromNode(contractAddress) {
+    return this.nod3.eth.getContractCodeAt(contractAddress);
   }
 
   async getInterfacesERC165(contract) {
