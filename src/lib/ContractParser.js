@@ -15,10 +15,9 @@ import {
 } from './utils'
 
 function mapInterfacesToERCs (interfaces) {
-  interfaces = Object.keys(interfaces)
+  return Object.keys(interfaces)
     .filter(k => interfaces[k] === true)
     .map(t => contractsInterfaces[t] || t)
-  return interfaces
 }
 
 function hasMethodSelector (txInputData, selector) {
