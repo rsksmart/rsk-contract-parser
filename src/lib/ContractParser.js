@@ -21,7 +21,7 @@ function mapInterfacesToERCs (interfaces) {
 }
 
 function hasMethodSelector (txInputData, selector) {
-  return (selector && txInputData) ? txInputData.includes(selector) : null
+  return selector && txInputData && txInputData.includes(selector)
 }
 
 export class ContractParser {
