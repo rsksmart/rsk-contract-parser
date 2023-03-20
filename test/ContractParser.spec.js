@@ -22,11 +22,4 @@ describe("Contract parser", function () {
       console.log({ info });
     });
   }
-
-  it("should detect ERC1967 proxy", async () => {
-    const info = await parser.getEIP1967Info(
-      "0xc41fe753ff1671b271e34cf1a5ab45c540192abd"
-    );
-    console.log("ERC1967", info);
-  });
 });
