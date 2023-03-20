@@ -172,8 +172,8 @@ export class ContractParser {
     return { methods, interfaces }
   }
 
-  async getContractInfoIfProxy (contractAddress) {
-    const { isUpgradeable, impContractAddress } = await this.checkForUpgradeableContract(contractAddress)
+  async getEIP1967Info (contractAddress) {
+    const { isUpgradeable, impContractAddress } = await this.isERC1967(contractAddress)
     if (isUpgradeable) {
       // manual check required
       const proxyContractBytecode = await this.getContractCodeFromNode(impContractAddress)
@@ -203,7 +203,7 @@ export class ContractParser {
     return { methods, interfaces }
   }
 
-  async checkForUpgradeableContract (contractAddress) {
+  async isERC1967 (contractAddress) {
     // check For ERC1967
     // https://eips.ethereum.org/EIPS/eip-1967
     // 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc storage address where the implementation address is stored
