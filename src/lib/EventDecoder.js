@@ -23,7 +23,7 @@ function EventDecoder (abi, logger) {
       return decoded.toHexString()
     }
     const res = add0x(Buffer.isBuffer(decoded) ? bufferToHex(decoded) : decoded.toString(16))
-    if(type === 'address' || type === 'address[]') return res.toLowerCase()
+    if (type === 'address' || type === 'address[]') return res.toLowerCase()
     return res
   }
 
@@ -45,9 +45,11 @@ function EventDecoder (abi, logger) {
 
       const parsedArgs = []
 
-      for (const i in eventFragment.inputs) parsedArgs.push(
-        encodeElement(eventFragment.inputs[i].type, args[i])
-      )
+      for (const i in eventFragment.inputs) {
+        parsedArgs.push(
+          encodeElement(eventFragment.inputs[i].type, args[i])
+        )
+      }
 
       return Object.assign({}, log, {
         signature: remove0x(topic),

@@ -45,9 +45,11 @@ function EventDecoder(abi, logger) {
 
       const parsedArgs = [];
 
-      for (const i in eventFragment.inputs) parsedArgs.push(
-      encodeElement(eventFragment.inputs[i].type, args[i]));
+      for (const i in eventFragment.inputs) {
+        parsedArgs.push(
+        encodeElement(eventFragment.inputs[i].type, args[i]));
 
+      }
 
       return Object.assign({}, log, {
         signature: (0, _rskUtils.remove0x)(topic),
