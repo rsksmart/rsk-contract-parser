@@ -181,7 +181,7 @@ class ContractParser {
       let interfaces = this.getInterfacesByMethods(methods);
 
       interfaces = mapInterfacesToERCs(interfaces);
-      return { methods, interfaces };
+      return { methods, interfaces: [...interfaces, 'ERC1967'] };
     }
     return { methods: [], interfaces: [] };
   }
