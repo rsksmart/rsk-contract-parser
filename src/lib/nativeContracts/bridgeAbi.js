@@ -27,18 +27,22 @@ export function getBridgeAbi ({ txBlockNumber, bitcoinNetwork }) {
   function findMatchingActivationHeight (txHeight, heights) {
     // Finds the highest release activation height that is lower than/equal to the tx's block number, in
     // order to find the ABI that corresponds to the bridge version used at the moment of the transaction.
+    let matchingActivationHeight
 
-    let matchingActivationHeight = -1
     for (let i = 0; i < heights.length; i++) {
       const currentHeight = heights[i]
+      const nextHeight = heights[i + 1]
 
-      if (txHeight >= currentHeight && matchingActivationHeight < currentHeight) {
-        matchingActivationHeight = currentHeight
+      if (txHeight >= currentHeight) {
+        if (!nextHeight || txHeight < nextHeight) {
+          matchingActivationHeight = currentHeight
+        }
       }
     }
 
     return matchingActivationHeight
   }
+
   if (isNaN(txBlockNumber) || txBlockNumber < 0) {
     throw new Error('Invalid tx block number')
   } else if (!['testnet', 'mainnet'].includes(bitcoinNetwork)) {
