@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "npx eslint src/**/* --quiet",
     "test": "npx mocha",
-    "test:local": "npx mocha test/compiler.spec.js test/events.spec.js test/nativeContracts.spec.js",
+    "test:local": "npx mocha test/compiler.spec.js test/events.spec.js test/nativeContracts.spec.js test/bridgeAbi.spec.js",
     "build": "npx babel src -d dist --copy-files",
     "abi": "npx babel-node --presets  @babel/preset-env src/lib/compileJsonAbis.js"
   },
