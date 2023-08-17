@@ -16,7 +16,8 @@ describe('# decode events', function () {
     let id = t.netId || 31
     initConfig.net = { id }
     let { abi, tx } = t
-    let parser = new ContractParser({ initConfig, abi })
+
+    let parser = new ContractParser({ initConfig, abi, txBlockNumber: (parseInt(tx.blockNumber)) })
     let e = t.expect
     describe(`TX: ${tx.transactionHash}`, function () {
       let decodedLogs = parser.parseTxLogs(tx.logs)

@@ -25,7 +25,7 @@ function hasMethodSelector(txInputData, selector) {
 }
 
 class ContractParser {
-  constructor({ abi, log, initConfig, nod3 } = {}) {
+  constructor({ abi, log, initConfig, nod3, txBlockNumber } = {}) {
     initConfig = initConfig || {};
     const { net } = initConfig;
     this.netId = net ? net.id : undefined;
@@ -35,7 +35,7 @@ class ContractParser {
     this.nativeContracts = (0, _NativeContracts.default)(initConfig);
     if (this.netId) {
       let bitcoinNetwork = _types.bitcoinRskNetWorks[this.netId];
-      this.nativeContractsEvents = (0, _NativeContractsDecoder.default)({ bitcoinNetwork });
+      this.nativeContractsEvents = (0, _NativeContractsDecoder.default)({ bitcoinNetwork, txBlockNumber });
     }
   }
 
@@ -156,8 +156,6 @@ class ContractParser {
       return v;
     }, {});
   }
-
-
 
   getMethodsBySelectors(txInputData) {
     let methods = this.getMethodsSelectors();
