@@ -1,4 +1,4 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.getBridgeAbi = getBridgeAbi;var _bridgeOrchid = _interopRequireDefault(require("./bridge-orchid.json"));
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.getBridgeAbi = getBridgeAbi;exports.RELEASES = void 0;var _bridgeOrchid = _interopRequireDefault(require("./bridge-orchid.json"));
 var _bridgeWasabi = _interopRequireDefault(require("./bridge-wasabi.json"));
 var _bridgePapyrus = _interopRequireDefault(require("./bridge-papyrus.json"));
 var _bridgeIris = _interopRequireDefault(require("./bridge-iris.json"));
@@ -6,52 +6,42 @@ var _bridgeFingerroot = _interopRequireDefault(require("./bridge-fingerroot.json
 var _bridgeHop = _interopRequireDefault(require("./bridge-hop.json"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
 const RELEASES = {
-  mainnet: {
-    0: _bridgeOrchid.default,
-    1591000: _bridgeWasabi.default,
-    2392700: _bridgePapyrus.default,
-    3614800: _bridgeIris.default,
-    4598500: _bridgeHop.default,
-    5468000: _bridgeFingerroot.default },
+  mainnet: [
+  { height: 0, abi: _bridgeOrchid.default },
+  { height: 1591000, abi: _bridgeWasabi.default },
+  { height: 2392700, abi: _bridgePapyrus.default },
+  { height: 3614800, abi: _bridgeIris.default },
+  { height: 4598500, abi: _bridgeHop.default },
+  { height: 5468000, abi: _bridgeFingerroot.default }],
 
-  testnet: {
-    0: _bridgeWasabi.default,
-    863000: _bridgePapyrus.default,
-    2060500: _bridgeIris.default,
-    3103000: _bridgeHop.default,
-    4015800: _bridgeFingerroot.default } };
+  testnet: [
+  { height: 0, abi: _bridgeWasabi.default },
+  { height: 863000, abi: _bridgePapyrus.default },
+  { height: 2060500, abi: _bridgeIris.default },
+  { height: 3103000, abi: _bridgeHop.default },
+  { height: 4015800, abi: _bridgeFingerroot.default }] };exports.RELEASES = RELEASES;
 
 
 
-function getBridgeAbi({ txBlockNumber, bitcoinNetwork }) {
-  function findMatchingActivationHeight(txHeight, heights) {
-    // Finds the highest release activation height that is lower than/equal to the tx's block number, in
-    // order to find the ABI that corresponds to the bridge version used at the moment of the transaction.
-    let matchingActivationHeight;
+function findmatchingAbi(txHeight, abisWithHeight) {
+  const lastIndex = abisWithHeight.length - 1;
 
-    for (let i = 0; i < heights.length; i++) {
-      const currentHeight = heights[i];
-      const nextHeight = heights[i + 1];
-
-      if (txHeight >= currentHeight) {
-        if (!nextHeight || txHeight < nextHeight) {
-          matchingActivationHeight = currentHeight;
-        }
+  if (txHeight >= abisWithHeight[lastIndex].height || txHeight === undefined) {
+    return abisWithHeight[lastIndex].abi;
+  } else {
+    for (let i = 1; i <= lastIndex; i++) {
+      const previous = abisWithHeight[i - 1];
+      if (txHeight >= previous.height && txHeight < abisWithHeight[i].height) {
+        return previous.abi;
       }
     }
-
-    return matchingActivationHeight;
   }
+}
 
-  if (isNaN(txBlockNumber) || txBlockNumber < 0) {
-    throw new Error('Invalid tx block number');
-  } else if (!['testnet', 'mainnet'].includes(bitcoinNetwork)) {
+function getBridgeAbi({ txBlockNumber, bitcoinNetwork }) {
+  if (!['testnet', 'mainnet'].includes(bitcoinNetwork)) {
     throw new Error('Invalid bitcoin network');
   }
 
-  const activationHeights = Object.keys(RELEASES[bitcoinNetwork]);
-
-  const matchingActivationHeight = findMatchingActivationHeight(txBlockNumber, activationHeights);
-
-  return RELEASES[bitcoinNetwork][matchingActivationHeight];
+  return findmatchingAbi(txBlockNumber, RELEASES[bitcoinNetwork]);
 }

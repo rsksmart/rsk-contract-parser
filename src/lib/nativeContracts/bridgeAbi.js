@@ -5,53 +5,43 @@ import iris from './bridge-iris.json'
 import fingerroot from './bridge-fingerroot.json'
 import hop from './bridge-hop.json'
 
-const RELEASES = {
-  mainnet: {
-    0: orchid,
-    1591000: wasabi,
-    2392700: papyrus,
-    3614800: iris,
-    4598500: hop,
-    5468000: fingerroot
-  },
-  testnet: {
-    0: wasabi,
-    863000: papyrus,
-    2060500: iris,
-    3103000: hop,
-    4015800: fingerroot
+export const RELEASES = {
+  mainnet: [
+    { height: 0, abi: orchid },
+    { height: 1591000, abi: wasabi },
+    { height: 2392700, abi: papyrus },
+    { height: 3614800, abi: iris },
+    { height: 4598500, abi: hop },
+    { height: 5468000, abi: fingerroot }
+  ],
+  testnet: [
+    { height: 0, abi: wasabi },
+    { height: 863000, abi: papyrus },
+    { height: 2060500, abi: iris },
+    { height: 3103000, abi: hop },
+    { height: 4015800, abi: fingerroot }
+  ]
+}
+
+function findmatchingAbi (txHeight, abisWithHeight) {
+  const lastIndex = abisWithHeight.length - 1
+
+  if (txHeight >= abisWithHeight[lastIndex].height || txHeight === undefined) {
+    return abisWithHeight[lastIndex].abi
+  } else {
+    for (let i = 1; i <= lastIndex; i++) {
+      const previous = abisWithHeight[i - 1]
+      if (txHeight >= previous.height && txHeight < abisWithHeight[i].height) {
+        return previous.abi
+      }
+    }
   }
 }
 
 export function getBridgeAbi ({ txBlockNumber, bitcoinNetwork }) {
-  function findMatchingActivationHeight (txHeight, heights) {
-    // Finds the highest release activation height that is lower than/equal to the tx's block number, in
-    // order to find the ABI that corresponds to the bridge version used at the moment of the transaction.
-    let matchingActivationHeight
-
-    for (let i = 0; i < heights.length; i++) {
-      const currentHeight = heights[i]
-      const nextHeight = heights[i + 1]
-
-      if (txHeight >= currentHeight) {
-        if (!nextHeight || txHeight < nextHeight) {
-          matchingActivationHeight = currentHeight
-        }
-      }
-    }
-
-    return matchingActivationHeight
-  }
-
-  if (isNaN(txBlockNumber) || txBlockNumber < 0) {
-    throw new Error('Invalid tx block number')
-  } else if (!['testnet', 'mainnet'].includes(bitcoinNetwork)) {
+  if (!['testnet', 'mainnet'].includes(bitcoinNetwork)) {
     throw new Error('Invalid bitcoin network')
   }
 
-  const activationHeights = Object.keys(RELEASES[bitcoinNetwork])
-
-  const matchingActivationHeight = findMatchingActivationHeight(txBlockNumber, activationHeights)
-
-  return RELEASES[bitcoinNetwork][matchingActivationHeight]
+  return findmatchingAbi(txBlockNumber, RELEASES[bitcoinNetwork])
 }
