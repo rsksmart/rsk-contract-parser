@@ -41,10 +41,6 @@ describe('All abis must be in ascendant order', () => {
   }
 })
 
-function shouldBeTheSameAbi (abi1, abi2) {
-  expect(abi1).to.be.deep.equal(abi2)
-}
-
 describe('getBridgeAbi(txBlockNumber, bitcoinNetwork) should return the correct ABI for the bridge', () => {
   const mainnetTestExpectations = [
     { height: 0, abi: orchid, name: 'orchid' },
@@ -62,7 +58,7 @@ describe('getBridgeAbi(txBlockNumber, bitcoinNetwork) should return the correct 
     const params = { txBlockNumber: height, bitcoinNetwork: 'mainnet' }
 
     it(`Should return ${name} abi for height ${height} in ${params.bitcoinNetwork}`, () => {
-      shouldBeTheSameAbi(getBridgeAbi(params), abi)
+      expect(getBridgeAbi(params)).to.be.deep.equal(abi)
     })
   }
 
@@ -70,7 +66,7 @@ describe('getBridgeAbi(txBlockNumber, bitcoinNetwork) should return the correct 
     const params = { txBlockNumber: height, bitcoinNetwork: 'testnet' }
 
     it(`Should return ${name} abi for height ${height} in ${params.bitcoinNetwork}`, () => {
-      shouldBeTheSameAbi(getBridgeAbi(params), abi)
+      expect(getBridgeAbi(params)).to.be.deep.equal(abi)
     })
   }
 
