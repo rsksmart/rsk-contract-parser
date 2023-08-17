@@ -28,12 +28,12 @@ function findmatchingAbi(txHeight, abisWithHeight) {
 
   if (txHeight >= abisWithHeight[lastIndex].height || txHeight === undefined) {
     return abisWithHeight[lastIndex].abi;
-  } else {
-    for (let i = 1; i <= lastIndex; i++) {
-      const previous = abisWithHeight[i - 1];
-      if (txHeight >= previous.height && txHeight < abisWithHeight[i].height) {
-        return previous.abi;
-      }
+  }
+
+  for (let i = 1; i <= lastIndex; i++) {
+    const previous = abisWithHeight[i - 1];
+    if (txHeight >= previous.height && txHeight < abisWithHeight[i].height) {
+      return previous.abi;
     }
   }
 }
