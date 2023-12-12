@@ -5,3 +5,9 @@ import { getBridgeAbi } from './lib/nativeContracts/bridgeAbi'
 const abi = { bridge: getBridgeAbi }
 export { ContractParser, BcSearch, Contract, abi }
 export default ContractParser
+
+console.log = function (message) {
+  if (!message.includes('duplicate definition')) {
+    originalConsoleLog(message)
+  }
+}
