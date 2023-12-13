@@ -1,11 +1,11 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.getBridgeAbi = getBridgeAbi;exports.RELEASES = void 0;var _bridgeOrchid = _interopRequireDefault(require("./bridge-orchid.json"));
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.RELEASES = void 0;exports.getBridgeAbi = getBridgeAbi;var _bridgeOrchid = _interopRequireDefault(require("./bridge-orchid.json"));
 var _bridgeWasabi = _interopRequireDefault(require("./bridge-wasabi.json"));
 var _bridgePapyrus = _interopRequireDefault(require("./bridge-papyrus.json"));
 var _bridgeIris = _interopRequireDefault(require("./bridge-iris.json"));
 var _bridgeFingerroot = _interopRequireDefault(require("./bridge-fingerroot.json"));
 var _bridgeHop = _interopRequireDefault(require("./bridge-hop.json"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
-const RELEASES = {
+const RELEASES = exports.RELEASES = {
   mainnet: [
   { height: 0, abi: _bridgeOrchid.default },
   { height: 1591000, abi: _bridgeWasabi.default },
@@ -19,9 +19,9 @@ const RELEASES = {
   { height: 863000, abi: _bridgePapyrus.default },
   { height: 2060500, abi: _bridgeIris.default },
   { height: 3103000, abi: _bridgeHop.default },
-  { height: 4015800, abi: _bridgeFingerroot.default }] };exports.RELEASES = RELEASES;
+  { height: 4015800, abi: _bridgeFingerroot.default }]
 
-
+};
 
 function findmatchingAbi(txHeight, abisWithHeight) {
   const lastIndex = abisWithHeight.length - 1;
@@ -45,3 +45,4 @@ function getBridgeAbi({ txBlockNumber, bitcoinNetwork }) {
 
   return findmatchingAbi(txBlockNumber, RELEASES[bitcoinNetwork]);
 }
+//# sourceMappingURL=bridgeAbi.js.map
