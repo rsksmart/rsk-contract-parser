@@ -2,7 +2,7 @@
 var _rskUtils = require("@rsksmart/rsk-utils");
 
 function BcSearch(nod3) {
-  const getBlock = hashOrNumber => {
+  const getBlock = (hashOrNumber) => {
     return nod3.eth.getBlock(hashOrNumber);
   };
 
@@ -27,7 +27,7 @@ function BcSearch(nod3) {
   };
 
   const deploymentBlock = (address, highBlock, lowBlock) => {
-    return block(blockNumber => isContractAtBlock(address, blockNumber), highBlock, lowBlock);
+    return block((blockNumber) => isContractAtBlock(address, blockNumber), highBlock, lowBlock);
   };
   const searchReceipt = async (transactions, cb) => {
     for (let tx of transactions) {
@@ -44,11 +44,11 @@ function BcSearch(nod3) {
     try {
       blockNumber = blockNumber || (await deploymentBlock(address, highBlock));
       block = block || (await nod3.eth.getBlock(blockNumber, true));
-      let transactions = block.transactions.filter(tx => !(0, _rskUtils.isAddress)(tx.to));
-      let transaction = await searchReceipt(transactions, receipt => receipt.contractAddress === address);
+      let transactions = block.transactions.filter((tx) => !(0, _rskUtils.isAddress)(tx.to));
+      let transaction = await searchReceipt(transactions, (receipt) => receipt.contractAddress === address);
       if (!transaction) {// internal transactions
         blockTrace = blockTrace || (await nod3.trace.block(block.hash));
-        let internalTx = blockTrace.find(trace => isItxDeployment(address, trace));
+        let internalTx = blockTrace.find((trace) => isItxDeployment(address, trace));
         if (internalTx) transaction = { internalTx };
       }
       if (transaction) transaction.timestamp = block.timestamp;
@@ -59,6 +59,7 @@ function BcSearch(nod3) {
   };
 
   return Object.freeze({ block, deploymentBlock, deploymentTx, isItxDeployment });
-}var _default =
+}var _default = exports.default =
 
-BcSearch;exports.default = _default;
+BcSearch;
+//# sourceMappingURL=BcSearch.js.map
