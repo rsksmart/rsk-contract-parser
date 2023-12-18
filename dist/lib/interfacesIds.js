@@ -1,4 +1,4 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.interfacesIds = exports.default = void 0;var _utils = require("./utils");
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = exports.interfacesIds = void 0;var _utils = require("./utils");
 
 const erc20methods = [
 'totalSupply()',
@@ -10,10 +10,10 @@ const erc20methods = [
 
 
 const erc677Methods = erc20methods.concat([
-'transferAndCall(address,uint256,bytes)']
-);
+'transferAndCall(address,uint256,bytes)']);
 
-const interfacesIds = exports.interfacesIds = {
+
+const interfacesIds = {
   ERC20: makeInterface(erc20methods),
   ERC677: makeInterface(erc677Methods),
   ERC165: makeInterface(['supportsInterface(bytes4)']),
@@ -26,27 +26,26 @@ const interfacesIds = exports.interfacesIds = {
   'isApprovedForAll(address,address)',
   'transferFrom(address,address,uint256)',
   'safeTransferFrom(address,address,uint256)',
-  'safeTransferFrom(address,address,uint256,bytes)']
-  ),
+  'safeTransferFrom(address,address,uint256,bytes)']),
+
   ERC721Enumerable: makeInterface([
   'totalSupply()',
   'tokenOfOwnerByIndex(address,uint256)',
-  'tokenByIndex(uint256)']
-  ),
+  'tokenByIndex(uint256)']),
+
   ERC721Metadata: makeInterface([
   'name()',
   'symbol()',
-  'tokenURI(uint256)']
-  ),
+  'tokenURI(uint256)']),
+
   ERC721Exists: makeInterface([
-  'exists(uint256)']
-  )
-};
+  'exists(uint256)']) };exports.interfacesIds = interfacesIds;
+
+
 
 function makeInterface(methods) {
   let id = (0, _utils.erc165IdFromMethods)(methods);
   return { methods, id };
-}var _default = exports.default =
+}var _default =
 
-interfacesIds;
-//# sourceMappingURL=interfacesIds.js.map
+interfacesIds;exports.default = _default;
