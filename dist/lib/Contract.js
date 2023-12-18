@@ -4,11 +4,11 @@ function Contract(abi, { address, nod3 } = {}) {
   if (!abi || typeof abi !== 'object') throw new Error('Invalid abi');
   const contractInterface = new _abi.Interface(abi);
 
-  const at = newAddress => {
+  const at = (newAddress) => {
     address = newAddress;
   };
 
-  const setNod3 = nod3Instance => {
+  const setNod3 = (nod3Instance) => {
     nod3 = nod3Instance;
   };
 
@@ -38,3 +38,4 @@ function Contract(abi, { address, nod3 } = {}) {
   };
   return Object.freeze({ at, setNod3, encodeCall, decodeCall, call });
 }
+//# sourceMappingURL=Contract.js.map

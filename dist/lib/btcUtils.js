@@ -1,23 +1,23 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.rskAddressFromBtcPublicKey = exports.compressPublic = exports.decompressPublic = exports.parsePublic = exports.pubToAddress = exports.h160toAddress = exports.h160 = exports.sha256 = void 0;var _crypto = _interopRequireDefault(require("crypto"));
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.sha256 = exports.rskAddressFromBtcPublicKey = exports.pubToAddress = exports.parsePublic = exports.h160toAddress = exports.h160 = exports.decompressPublic = exports.compressPublic = void 0;var _crypto = _interopRequireDefault(require("crypto"));
 var bs58 = _interopRequireWildcard(require("bs58"));
 var _rskUtils = require("@rsksmart/rsk-utils");
-var _secp256k = _interopRequireDefault(require("secp256k1"));function _getRequireWildcardCache() {if (typeof WeakMap !== "function") return null;var cache = new WeakMap();_getRequireWildcardCache = function () {return cache;};return cache;}function _interopRequireWildcard(obj) {if (obj && obj.__esModule) {return obj;}if (obj === null || typeof obj !== "object" && typeof obj !== "function") {return { default: obj };}var cache = _getRequireWildcardCache();if (cache && cache.has(obj)) {return cache.get(obj);}var newObj = {};var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;for (var key in obj) {if (Object.prototype.hasOwnProperty.call(obj, key)) {var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;if (desc && (desc.get || desc.set)) {Object.defineProperty(newObj, key, desc);} else {newObj[key] = obj[key];}}}newObj.default = obj;if (cache) {cache.set(obj, newObj);}return newObj;}function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _secp256k = _interopRequireDefault(require("secp256k1"));function _getRequireWildcardCache(e) {if ("function" != typeof WeakMap) return null;var r = new WeakMap(),t = new WeakMap();return (_getRequireWildcardCache = function (e) {return e ? t : r;})(e);}function _interopRequireWildcard(e, r) {if (!r && e && e.__esModule) return e;if (null === e || "object" != typeof e && "function" != typeof e) return { default: e };var t = _getRequireWildcardCache(r);if (t && t.has(e)) return t.get(e);var n = { __proto__: null },a = Object.defineProperty && Object.getOwnPropertyDescriptor;for (var u in e) if ("default" !== u && Object.prototype.hasOwnProperty.call(e, u)) {var i = a ? Object.getOwnPropertyDescriptor(e, u) : null;i && (i.get || i.set) ? Object.defineProperty(n, u, i) : n[u] = e[u];}return n.default = e, t && t.set(e, n), n;}function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
 const PREFIXES = {
   mainnet: {
     pubKeyHash: '00',
-    scriptHash: '05' },
-
+    scriptHash: '05'
+  },
   testnet: {
     pubKeyHash: '6F',
-    scriptHash: 'C4' },
-
+    scriptHash: 'C4'
+  },
   regtest: {
     pubKeyHash: '00',
-    scriptHash: '00' } };
-
-
-const getNetPrefix = netName => {
+    scriptHash: '00'
+  }
+};
+const getNetPrefix = (netName) => {
   let prefixes = PREFIXES[netName];
   if (!prefixes) throw new Error(`Unknown network ${netName}`);
   return prefixes;
@@ -48,8 +48,9 @@ const parsePublic = (pub, compressed) => {
   return _secp256k.default.publicKeyConvert(pub, compressed);
 };exports.parsePublic = parsePublic;
 
-const decompressPublic = compressed => parsePublic(compressed, false).toString('hex');exports.decompressPublic = decompressPublic;
+const decompressPublic = (compressed) => parsePublic(compressed, false).toString('hex');exports.decompressPublic = decompressPublic;
 
-const compressPublic = pub => parsePublic(pub, true).toString('hex');exports.compressPublic = compressPublic;
+const compressPublic = (pub) => parsePublic(pub, true).toString('hex');exports.compressPublic = compressPublic;
 
-const rskAddressFromBtcPublicKey = cpk => (0, _rskUtils.add0x)((0, _rskUtils.keccak256)(parsePublic(cpk, false).slice(1)).slice(-40));exports.rskAddressFromBtcPublicKey = rskAddressFromBtcPublicKey;
+const rskAddressFromBtcPublicKey = (cpk) => (0, _rskUtils.add0x)((0, _rskUtils.keccak256)(parsePublic(cpk, false).slice(1)).slice(-40));exports.rskAddressFromBtcPublicKey = rskAddressFromBtcPublicKey;
+//# sourceMappingURL=btcUtils.js.map
