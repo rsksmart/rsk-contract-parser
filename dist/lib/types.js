@@ -1,29 +1,30 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.tokensInterfaces = exports.contractsInterfaces = exports.bitcoinRskNetWorks = exports.bitcoinNetworks = exports.INTERFACE_ID_BYTES = exports.ABI_SIGNATURE = void 0;const ABI_SIGNATURE = '__signatureData';exports.ABI_SIGNATURE = ABI_SIGNATURE;
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.tokensInterfaces = exports.contractsInterfaces = exports.bitcoinRskNetWorks = exports.bitcoinNetworks = exports.INTERFACE_ID_BYTES = exports.ABI_SIGNATURE = void 0;const ABI_SIGNATURE = exports.ABI_SIGNATURE = '__signatureData';
 
-const INTERFACE_ID_BYTES = 4;exports.INTERFACE_ID_BYTES = INTERFACE_ID_BYTES;
+const INTERFACE_ID_BYTES = exports.INTERFACE_ID_BYTES = 4;
 
-const bitcoinNetworks = {
+const bitcoinNetworks = exports.bitcoinNetworks = {
   TESTNET: 'testnet',
   MAINNET: 'mainnet',
-  REGTEST: 'regtest' };exports.bitcoinNetworks = bitcoinNetworks;
+  REGTEST: 'regtest'
+};
 
-
-const bitcoinRskNetWorks = {
+const bitcoinRskNetWorks = exports.bitcoinRskNetWorks = {
   31: bitcoinNetworks.TESTNET,
   30: bitcoinNetworks.MAINNET,
-  33: bitcoinNetworks.REGTEST };exports.bitcoinRskNetWorks = bitcoinRskNetWorks;
+  33: bitcoinNetworks.REGTEST
+};
 
-
-const contractsInterfaces = {
+const contractsInterfaces = exports.contractsInterfaces = {
   ERC20: 'ERC20',
   ERC677: 'ERC677',
   ERC165: 'ERC165',
-  ERC721: 'ERC721' };exports.contractsInterfaces = contractsInterfaces;
-
+  ERC721: 'ERC721'
+};
 
 const ci = contractsInterfaces;
 
-const tokensInterfaces = [
+const tokensInterfaces = exports.tokensInterfaces = [
 ci.ERC20,
 ci.ERC677,
-ci.ERC721];exports.tokensInterfaces = tokensInterfaces;
+ci.ERC721];
+//# sourceMappingURL=types.js.map

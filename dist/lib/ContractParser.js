@@ -16,8 +16,8 @@ var _utils = require("./utils");function _interopRequireDefault(obj) {return obj
 
 function mapInterfacesToERCs(interfaces) {
   return Object.keys(interfaces).
-  filter(k => interfaces[k] === true).
-  map(t => _types.contractsInterfaces[t] || t);
+  filter((k) => interfaces[k] === true).
+  map((t) => _types.contractsInterfaces[t] || t);
 }
 
 function hasMethodSelector(txInputData, selector) {
@@ -67,8 +67,8 @@ class ContractParser {
 
   getAbiMethods() {
     let methods = {};
-    this.abi.filter(def => def.type === 'function').
-    map(m => {
+    this.abi.filter((def) => def.type === 'function').
+    map((m) => {
       let sig = m[_types.ABI_SIGNATURE] || (0, _utils.abiSignatureData)(m);
       sig.name = m.name;
       methods[sig.method] = sig;
@@ -77,7 +77,7 @@ class ContractParser {
   }
 
   parseTxLogs(logs, abi) {
-    return this.decodeLogs(logs, abi).map(event => {
+    return this.decodeLogs(logs, abi).map((event) => {
       this.addEventAddresses(event);
       event.abi = (0, _utils.removeAbiSignatureData)(event.abi);
       return event;
@@ -96,7 +96,7 @@ class ContractParser {
         if (v.type === 'address[]') {
           let value = args[i] || [];
           if (Array.isArray(value)) {// temp fix to undecoded events
-            value.forEach(v => _addresses.push(v));
+            value.forEach((v) => _addresses.push(v));
           } else {
             let i = 0;
             while (2 + (i + 1) * 40 <= value.length) {
@@ -119,7 +119,7 @@ class ContractParser {
     }
     const { isNativeContract } = this.nativeContracts;
     const { nativeContractsEvents } = this;
-    return logs.map(log => {
+    return logs.map((log) => {
       const { address } = log;
       const decoder = isNativeContract(address) ? nativeContractsEvents.getEventDecoder(log) : eventDecoder;
       return decoder.decodeLog(log);
@@ -146,11 +146,11 @@ class ContractParser {
   async getTokenData(contract, { methods } = {}) {
     methods = methods || ['name', 'symbol', 'decimals', 'totalSupply'];
     let result = await Promise.all(
-    methods.map((m) =>
-    this.call(m, contract).
-    then(res => res).
-    catch(err => this.log.debug(`[${contract.address}] Error executing ${m}  Error: ${err}`))));
-
+      methods.map((m) =>
+      this.call(m, contract).
+      then((res) => res).
+      catch((err) => this.log.debug(`[${contract.address}] Error executing ${m}  Error: ${err}`)))
+    );
     return result.reduce((v, a, i) => {
       let name = methods[i];
       v[name] = a;
@@ -161,7 +161,7 @@ class ContractParser {
   getMethodsBySelectors(txInputData) {
     let methods = this.getMethodsSelectors();
     return Object.keys(methods).
-    filter(method => hasMethodSelector(txInputData, methods[method]) === true);
+    filter((method) => hasMethodSelector(txInputData, methods[method]) === true);
   }
 
   async getContractInfo(txInputData, contract) {
@@ -231,7 +231,7 @@ class ContractParser {
 
   getInterfacesByMethods(methods, isErc165) {
     return Object.keys(_interfacesIds.default).
-    map(i => {
+    map((i) => {
       return [i, (0, _rskUtils.includesAll)(methods, _interfacesIds.default[i].methods)];
     }).
     reduce((obj, value) => {
@@ -258,7 +258,8 @@ class ContractParser {
     } catch (err) {
       return Promise.reject(err);
     }
-  }}exports.ContractParser = ContractParser;var _default =
+  }
+}exports.ContractParser = ContractParser;var _default = exports.default =
 
-
-ContractParser;exports.default = _default;
+ContractParser;
+//# sourceMappingURL=ContractParser.js.map
