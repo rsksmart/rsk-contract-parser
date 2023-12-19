@@ -59,7 +59,10 @@ function EventDecoder (abi, logger) {
         abi: JSON.parse(eventFragment.format('json'))
       })
     } catch (e) {
-      logger.error(e)
+      // temporary fix to avoid ethers "no matching event" error spam
+      if (!e.message.includes('no matching event')) {
+        logger.error(e)
+      }
       return log
     }
   }

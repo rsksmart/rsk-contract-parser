@@ -5,10 +5,10 @@ var _abi = require("@ethersproject/abi");
 function EventDecoder(abi, logger) {
   const contractInterface = new _abi.Interface((0, _utils.addSignatureDataToAbi)(abi));
 
-  const getEventAbi = (topics) => {
+  const getEventAbi = topics => {
     topics = [...topics];
     const sigHash = (0, _rskUtils.remove0x)(topics.shift());
-    let events = abi.filter((i) => {
+    let events = abi.filter(i => {
       let { indexed, signature } = (0, _utils.getSignatureDataFromAbi)(i);
       return signature === sigHash && indexed === topics.length;
     });
@@ -29,7 +29,7 @@ function EventDecoder(abi, logger) {
 
   const encodeElement = (type, decoded) => {
     if (Array.isArray(decoded)) {
-      decoded = decoded.map((d) => formatElement(type, d));
+      decoded = decoded.map(d => formatElement(type, d));
       if (decoded.length === 1) decoded = decoded.join();
     } else {
       decoded = formatElement(type, decoded);
@@ -37,7 +37,7 @@ function EventDecoder(abi, logger) {
     return decoded;
   };
 
-  const decodeLog = (log) => {
+  const decodeLog = log => {
     try {
       const { eventFragment, name, args, topic } = contractInterface.parseLog(log);
 
@@ -47,8 +47,8 @@ function EventDecoder(abi, logger) {
 
       for (const i in eventFragment.inputs) {
         parsedArgs.push(
-          encodeElement(eventFragment.inputs[i].type, args[i])
-        );
+        encodeElement(eventFragment.inputs[i].type, args[i]));
+
       }
 
       return Object.assign({}, log, {
@@ -56,16 +56,18 @@ function EventDecoder(abi, logger) {
         event: name,
         address,
         args: parsedArgs,
-        abi: JSON.parse(eventFragment.format('json'))
-      });
+        abi: JSON.parse(eventFragment.format('json')) });
+
     } catch (e) {
-      logger.error(e);
+      // temporary fix to avoid ethers "no matching event" error spam
+      if (!e.message.includes('no matching event')) {
+        logger.error(e);
+      }
       return log;
     }
   };
 
   return Object.freeze({ decodeLog, getEventAbi });
-}var _default = exports.default =
+}var _default =
 
-EventDecoder;
-//# sourceMappingURL=EventDecoder.js.map
+EventDecoder;exports.default = _default;

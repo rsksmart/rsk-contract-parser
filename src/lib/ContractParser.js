@@ -137,7 +137,8 @@ export class ContractParser {
       const res = await contract.call(method, params, options)
       return res
     } catch (err) {
-      this.log.warn(`Method ${method} call ${err}`)
+      // temporary fix to avoid errored contract calls spam logs
+      // this.log.warn(`Method ${method} call ${err}`)
       return null
     }
   }

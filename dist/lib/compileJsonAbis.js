@@ -12,7 +12,7 @@ const jsonPath = `${__dirname}/jsonAbis`;
 const ozPath = _path.default.resolve('node_modules/openzeppelin-solidity/build/contracts');
 const destinationFile = `${__dirname}/compiled_abi.json`;
 
-compileAbi([jsonPath, ozPath]).then((abi) => {
+compileAbi([jsonPath, ozPath]).then(abi => {
   writeFile(destinationFile, JSON.stringify(abi, null, 2)).
   then(() => {
     console.log(`New ABI saved on ${destinationFile}`);
@@ -25,11 +25,11 @@ async function compileAbi(dirs) {
     let jsonFiles = [];
     for (let dir of dirs) {
       let files = await readDir(dir);
-      files = files.filter((file) => _path.default.extname(file) === '.json');
+      files = files.filter(file => _path.default.extname(file) === '.json');
       if (!files || !files.length) throw new Error(`No json files in dir ${dir}`);
-      jsonFiles = jsonFiles.concat(files.map((file) => `${dir}/${file}`));
+      jsonFiles = jsonFiles.concat(files.map(file => `${dir}/${file}`));
     }
-    let abi = await Promise.all(jsonFiles.map((file) => readJson(`${file}`).then((content) => {
+    let abi = await Promise.all(jsonFiles.map(file => readJson(`${file}`).then(content => {
       return Array.isArray(content) ? content : content.abi;
     })));
     if (!abi) throw new Error(`Invalid abi `);
@@ -55,15 +55,15 @@ async function readJson(file) {
 
 function processAbi(abi) {
   // remove fallbacks
-  abi = abi.filter((a) => a.type !== 'fallback');
+  abi = abi.filter(a => a.type !== 'fallback');
   // remove duplicates
-  abi = [...new Set(abi.map((a) => JSON.stringify(a)))].map((a) => JSON.parse(a));
+  abi = [...new Set(abi.map(a => JSON.stringify(a)))].map(a => JSON.parse(a));
   // add signatures
   abi = (0, _utils.addSignatureDataToAbi)(abi);
   // detect 4 bytes collisions
-  let signatures = abi.map((a) => a[_types.ABI_SIGNATURE].signature).filter((v) => v);
+  let signatures = abi.map(a => a[_types.ABI_SIGNATURE].signature).filter(v => v);
   signatures = [...new Set(signatures)];
-  let fourBytes = signatures.map((s) => s.slice(0, 8));
+  let fourBytes = signatures.map(s => s.slice(0, 8));
   if (fourBytes.length !== [...new Set(fourBytes)].length) {
     console.log(fourBytes.filter((v, i) => fourBytes.indexOf(v) !== i));
     throw new Error('4bytes collision');
@@ -73,8 +73,7 @@ function processAbi(abi) {
   return abi;
 }
 
-process.on('unhandledRejection', (err) => {
+process.on('unhandledRejection', err => {
   console.error(err);
   process.exit(9);
 });
-//# sourceMappingURL=compileJsonAbis.js.map
