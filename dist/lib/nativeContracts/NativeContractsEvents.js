@@ -4,27 +4,27 @@ var _FakeABI = _interopRequireDefault(require("./FakeABI"));function _interopReq
 function NativeContractsEvents({ bitcoinNetwork } = {}) {
   const network = bitcoinNetwork || 'testnet';
   const fakeAbi = (0, _FakeABI.default)(network);
-  const decodeAddress = address => {
+  const decodeAddress = (address) => {
     address = Buffer.from((0, _rskUtils.remove0x)(address), 'hex');
     return (0, _rskUtils.add0x)(address.toString('hex').slice(-40));
   };
 
-  const decodeEventName = name => {
+  const decodeEventName = (name) => {
     return Buffer.from((0, _rskUtils.remove0x)(name), 'hex').toString('ascii').replace(/\0/g, '');
   };
 
-  const removeEmptyStartBytes = d => {
+  const removeEmptyStartBytes = (d) => {
     d = !Buffer.isBuffer(d) ? Buffer.from(d, 'hex') : d;
-    return d.slice(d.findIndex(x => x > 0));
+    return d.slice(d.findIndex((x) => x > 0));
   };
 
-  const decodeData = data => {
+  const decodeData = (data) => {
     let decoded = _rskUtils.rlp.decode(data);
     if (!Array.isArray(decoded)) decoded = [decoded];
-    return decoded.map(d => (0, _rskUtils.add0x)(removeEmptyStartBytes(d).toString('hex')));
+    return decoded.map((d) => (0, _rskUtils.add0x)(removeEmptyStartBytes(d).toString('hex')));
   };
 
-  const getEventAbi = eventName => fakeAbi.find(a => a.name === eventName && a.type === 'event');
+  const getEventAbi = (eventName) => fakeAbi.find((a) => a.name === eventName && a.type === 'event');
 
   const decodeByType = (type, value) => {
     if (type === 'address') return decodeAddress(value);
@@ -39,7 +39,7 @@ function NativeContractsEvents({ bitcoinNetwork } = {}) {
     return decodeByType(type, value);
   };
 
-  const removeCustomProperties = obj => {
+  const removeCustomProperties = (obj) => {
     const res = Object.assign({}, obj);
     for (let p in res) {
       if (p[0] === '_') delete res[p];
@@ -47,14 +47,14 @@ function NativeContractsEvents({ bitcoinNetwork } = {}) {
     return res;
   };
 
-  const cleanAbi = abi => {
+  const cleanAbi = (abi) => {
     abi = removeCustomProperties(abi);
     let { inputs } = abi;
-    if (Array.isArray(inputs)) abi.inputs = inputs.map(input => removeCustomProperties(input));
+    if (Array.isArray(inputs)) abi.inputs = inputs.map((input) => removeCustomProperties(input));
     return abi;
   };
 
-  const decodeLog = log => {
+  const decodeLog = (log) => {
     let topics = [...log.topics];
     let event = decodeEventName(topics.shift());
     let abi = getEventAbi(event);
@@ -78,6 +78,7 @@ function NativeContractsEvents({ bitcoinNetwork } = {}) {
     return log;
   };
   return Object.freeze({ decodeLog, abi: fakeAbi });
-}var _default =
+}var _default = exports.default =
 
-NativeContractsEvents;exports.default = _default;
+NativeContractsEvents;
+//# sourceMappingURL=NativeContractsEvents.js.map

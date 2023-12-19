@@ -8,9 +8,10 @@ function NativeContractsEventDecoder({ bitcoinNetwork, txBlockNumber }) {
   const ABI = (0, _utils.addSignatureDataToAbi)((0, _bridgeAbi.getBridgeAbi)({ txBlockNumber, bitcoinNetwork }));
   const solidityDecoder = (0, _EventDecoder.default)(ABI);
 
-  const getEventDecoder = log => {
+  const getEventDecoder = (log) => {
     const { eventABI } = solidityDecoder.getEventAbi([...log.topics]);
     return eventABI ? solidityDecoder : nativeDecoder;
   };
   return Object.freeze({ getEventDecoder });
 }
+//# sourceMappingURL=NativeContractsDecoder.js.map
