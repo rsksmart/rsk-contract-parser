@@ -163,6 +163,23 @@
     "outputs": []
   },
   {
+    "name": "receiveHeader",
+    "type": "function",
+    "constant": true,
+    "inputs": [
+      {
+        "name": "block",
+        "type": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int256"
+      }
+    ]
+  },
+  {
     "name": "getFederationSize",
     "type": "function",
     "constant": true,
@@ -781,6 +798,181 @@
     ]
   },
   {
+    "name": "registerFastBridgeBtcTransaction",
+    "type": "function",
+    "constant": true,
+    "inputs": [
+      {
+        "name": "btcTxSerialized",
+        "type": "bytes"
+      },
+      {
+        "name": "height",
+        "type": "uint256"
+      }, 
+      {
+        "name": "pmtSerialized",
+        "type": "bytes"
+      },  
+      {
+        "name": "derivationArgumentsHash",
+        "type": "bytes32"
+      },
+      {
+        "name": "userRefundBtcAddress",
+        "type": "bytes"
+      }, 
+      {
+        "name": "liquidityBridgeContractAddress",
+        "type": "address"
+      }, 
+      {
+        "name": "liquidityProviderBtcAddress",
+        "type": "bytes"
+      }, 
+      {
+        "name": "shouldTransferToContract",
+        "type": "bool"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int256"
+      }
+    ]
+  },
+  {
+    "name": "getActiveFederationCreationBlockHeight",
+    "type": "function",
+    "constant": true,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "getBtcBlockchainBestBlockHeader",
+    "type": "function",
+    "constant": true,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes"
+      }
+    ]
+  },
+  {
+    "name": "getBtcBlockchainBlockHeaderByHash",
+    "type": "function",
+    "constant": true,
+    "inputs": [
+      {
+        "name": "btcBlockHash",  
+        "type": "bytes32" 
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes"
+      }
+    ]
+  },
+  {
+    "name": "getBtcBlockchainBlockHeaderByHeight",
+    "type": "function",
+    "constant": true,
+    "inputs": [
+      {
+        "name": "btcBlockHeight", 
+        "type": "uint256" 
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes"
+      }
+    ]
+  },
+  {
+    "name": "getBtcBlockchainParentBlockHeaderByHash",
+    "type": "function",
+    "constant": true,
+    "inputs": [
+      {
+        "name": "btcBlockHash", 
+        "type": "bytes32" 
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes"
+      }
+    ]
+  },
+  {
+    "name": "getEstimatedFeesForNextPegOutEvent",
+    "type": "function",
+    "constant": true,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "getNextPegoutCreationBlockNumber",
+    "type": "function",
+    "constant": true,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "getQueuedPegoutsCount",
+    "type": "function",
+    "constant": true,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "releaseBtc",
+    "type": "function",
+    "constant": true,
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "getActivePowpegRedeemScript",
+    "type": "function",
+    "constant": true,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes"
+      }
+    ]
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -910,6 +1102,128 @@
       }
     ],
     "name": "release_requested",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "btcTxHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "amount",
+        "type": "int256"
+      },
+      {
+        "indexed": false,
+        "name": "protocolVersion",
+        "type": "int256"
+      }
+    ],
+    "name": "pegin_btc",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "btcTxHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "reason",
+        "type": "int256"
+      }
+    ],
+    "name": "rejected_pegin",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "btcTxHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "reason",
+        "type": "int256"
+      }
+    ],
+    "name": "unrefundable_pegin",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "btcDestinationAddress",
+        "type": "bytes"
+      },
+      {
+        "indexed": false,
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "release_request_received",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "reason",
+        "type": "int256"
+      }
+    ],
+    "name": "release_request_rejected",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "btcTxHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "releaseRskTxHashes",
+        "type": "bytes"
+      }
+    ],
+    "name": "batch_pegout_created",
     "type": "event"
   }
 ]

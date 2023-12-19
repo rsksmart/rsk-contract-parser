@@ -39,3 +39,4 @@ function help(msg) {
   console.log(`Example: export URL=http://localhost:4444`);
   process.exit(0);
 }
+//# sourceMappingURL=getDeployment.js.map

@@ -1,49 +1,25 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = Contract;var _rskUtils = require("@rsksmart/rsk-utils");
-var _ethereumjsAbi = _interopRequireDefault(require("ethereumjs-abi"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = Contract;var _abi = require("@ethersproject/abi");
 
 function Contract(abi, { address, nod3 } = {}) {
   if (!abi || typeof abi !== 'object') throw new Error('Invalid abi');
+  const contractInterface = new _abi.Interface(abi);
 
-  const at = newAddress => {
+  const at = (newAddress) => {
     address = newAddress;
   };
 
-  const setNod3 = nod3Instance => {
+  const setNod3 = (nod3Instance) => {
     nod3 = nod3Instance;
   };
 
-  const abiFind = (type, name) => abi.find(i => i.type === type && i.name === name);
-
-  const isMethod = name => abiFind('function', name);
-
   // const isEvent = name => abiFind('event', name)
 
-  const getMethod = methodName => {
-    const abiDef = isMethod(methodName);
-    if (!abiDef) throw new Error(`Unknown method: "${methodName}"`);
-    const { name, inputs, outputs } = abiDef;
-    const types = inputs.filter(i => i.type).map(i => i.type);
-    const returns = outputs.filter(o => o.type).map(o => o.type);
-    const id = _ethereumjsAbi.default.methodID(name, types).toString('hex');
-    const method = `${name}(${types.join(' ')})`;
-    return { types, id, name, method, returns };
-  };
-
-  const encodeCall = (methodName, params = []) => {
-    try {
-      const { id, types } = getMethod(methodName);
-      let data = _ethereumjsAbi.default.rawEncode(types, params).toString('hex');
-      data = (0, _rskUtils.add0x)(`${id}${data}`);
-      return data;
-    } catch (err) {
-      throw err;
-    }
-  };
+  const encodeCall = (methodName, params = []) => contractInterface.encodeFunctionData(methodName, params);
 
   const decodeCall = (methodName, data) => {
-    const { returns } = getMethod(methodName);
-    const decoded = _ethereumjsAbi.default.rawDecode(returns, (0, _rskUtils.toBuffer)(data));
-    return Array.isArray(decoded) && returns.length < 2 ? decoded[0] : decoded;
+    const { outputs } = contractInterface.getFunction(methodName);
+    const decoded = contractInterface.decodeFunctionResult(methodName, data);
+    return Array.isArray(decoded) && outputs && outputs.length < 2 ? decoded[0] : decoded;
   };
 
   const call = async (methodName, params = [], txData = {}) => {
@@ -62,3 +38,4 @@ function Contract(abi, { address, nod3 } = {}) {
   };
   return Object.freeze({ at, setNod3, encodeCall, decodeCall, call });
 }
+//# sourceMappingURL=Contract.js.map

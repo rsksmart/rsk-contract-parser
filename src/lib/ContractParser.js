@@ -14,8 +14,18 @@ import {
   soliditySignature
 } from './utils'
 
+function mapInterfacesToERCs (interfaces) {
+  return Object.keys(interfaces)
+    .filter(k => interfaces[k] === true)
+    .map(t => contractsInterfaces[t] || t)
+}
+
+function hasMethodSelector (txInputData, selector) {
+  return selector && txInputData && txInputData.includes(selector)
+}
+
 export class ContractParser {
-  constructor ({ abi, log, initConfig, nod3 } = {}) {
+  constructor ({ abi, log, initConfig, nod3, txBlockNumber } = {}) {
     initConfig = initConfig || {}
     const { net } = initConfig
     this.netId = (net) ? net.id : undefined
@@ -25,7 +35,7 @@ export class ContractParser {
     this.nativeContracts = NativeContracts(initConfig)
     if (this.netId) {
       let bitcoinNetwork = bitcoinRskNetWorks[this.netId]
-      this.nativeContractsEvents = NativeContractsDecoder({ bitcoinNetwork })
+      this.nativeContractsEvents = NativeContractsDecoder({ bitcoinNetwork, txBlockNumber })
     }
   }
 
@@ -87,6 +97,12 @@ export class ContractParser {
           let value = args[i] || []
           if (Array.isArray(value)) { // temp fix to undecoded events
             value.forEach(v => _addresses.push(v))
+          } else {
+            let i = 0
+            while (2 + (i + 1) * 40 <= value.length) {
+              _addresses.push('0x' + value.slice(2 + i * 40, 2 + (i + 1) * 40))
+              i++
+            }
           }
         }
       })
@@ -97,7 +113,7 @@ export class ContractParser {
 
   decodeLogs (logs, abi) {
     abi = abi || this.abi
-    const eventDecoder = EventDecoder(abi)
+    const eventDecoder = EventDecoder(abi, this.log)
     if (!this.nativeContracts || !this.nativeContractsEvents) {
       throw new Error(`Native contracts decoder is missing, check the value of netId:${this.netId}`)
     }
@@ -121,7 +137,8 @@ export class ContractParser {
       const res = await contract.call(method, params, options)
       return res
     } catch (err) {
-      this.log.warn(`Method ${method} call ${err}`)
+      // temporary fix to avoid errored contract calls spam logs
+      // this.log.warn(`Method ${method} call ${err}`)
       return null
     }
   }
@@ -141,17 +158,34 @@ export class ContractParser {
     }, {})
   }
 
-  hasMethodSelector (txInputData, selector) {
-    return (selector && txInputData) ? txInputData.includes(selector) : null
-  }
-
   getMethodsBySelectors (txInputData) {
     let methods = this.getMethodsSelectors()
     return Object.keys(methods)
-      .filter(method => this.hasMethodSelector(txInputData, methods[method]) === true)
+      .filter(method => hasMethodSelector(txInputData, methods[method]) === true)
   }
 
   async getContractInfo (txInputData, contract) {
+    let { interfaces, methods } = await this.getContractImplementedInterfaces(txInputData, contract)
+
+    interfaces = mapInterfacesToERCs(interfaces)
+    return { methods, interfaces }
+  }
+
+  async getEIP1967Info (contractAddress) {
+    const { isUpgradeable, impContractAddress } = await this.isERC1967(contractAddress)
+    if (isUpgradeable) {
+      // manual check required
+      const proxyContractBytecode = await this.getContractCodeFromNode(impContractAddress)
+      const methods = this.getMethodsBySelectors(proxyContractBytecode)
+      let interfaces = this.getInterfacesByMethods(methods)
+
+      interfaces = mapInterfacesToERCs(interfaces)
+      return { methods, interfaces: [...interfaces, 'ERC1967'] }
+    }
+    return {methods: [], interfaces: []}
+  }
+
+  async getContractImplementedInterfaces (txInputData, contract) {
     let methods = this.getMethodsBySelectors(txInputData)
     let isErc165 = false
     //  skip non-erc165 contracts
@@ -159,12 +193,31 @@ export class ContractParser {
       isErc165 = await this.implementsErc165(contract)
     }
     let interfaces
-    if (isErc165) interfaces = await this.getInterfacesERC165(contract)
-    else interfaces = this.getInterfacesByMethods(methods)
-    interfaces = Object.keys(interfaces)
-      .filter(k => interfaces[k] === true)
-      .map(t => contractsInterfaces[t] || t)
+    if (isErc165) {
+      interfaces = await this.getInterfacesERC165(contract)
+    } else {
+      interfaces = this.getInterfacesByMethods(methods)
+    }
+
     return { methods, interfaces }
+  }
+
+  async isERC1967 (contractAddress) {
+    // check For ERC1967
+    // https://eips.ethereum.org/EIPS/eip-1967
+    // 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc storage address where the implementation address is stored
+    const storedValue = await this.nod3.eth.getStorageAt(contractAddress, '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc')
+    const isUpgradeable = storedValue !== '0x0'
+    if (isUpgradeable) {
+      const impContractAddress = `0x${storedValue.slice(-40)}` // extract contract address
+      return { isUpgradeable, impContractAddress }
+    } else {
+      return { isUpgradeable, impContractAddress: storedValue }
+    }
+  }
+
+  async getContractCodeFromNode (contractAddress) {
+    return this.nod3.eth.getContractCodeAt(contractAddress)
   }
 
   async getInterfacesERC165 (contract) {

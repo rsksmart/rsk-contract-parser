@@ -103,7 +103,7 @@ export default {
         'args': [
           '0x1c3227',
           '0x1c3228',
-          '0x2'
+          '0x02'
         ],
         'topics': [
           '0x07b5de8b7d8ad88823dc9d5d13a26a58dd5dad9d7431c971916e8a3e545ac2d0'
