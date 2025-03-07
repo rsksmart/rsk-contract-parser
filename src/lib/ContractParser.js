@@ -187,7 +187,7 @@ export class ContractParser {
     let proxyDetails = {
       address: contractAddress,
       isUpgradeable: false,
-      impContractAddress: null,
+      implementationAddress: null,
       beaconAddress: null,
       proxyType: null,
       methods: [],
@@ -204,8 +204,8 @@ export class ContractParser {
       }
     }
 
-    if (proxyDetails.isUpgradeable && isAddress(proxyDetails.impContractAddress)) {
-      const implementationContractBytecode = await this.getContractCodeFromNode(proxyDetails.impContractAddress)
+    if (proxyDetails.isUpgradeable && isAddress(proxyDetails.implementationAddress)) {
+      const implementationContractBytecode = await this.getContractCodeFromNode(proxyDetails.implementationAddress)
       const methods = this.getMethodsBySelectors(implementationContractBytecode)
       let interfaces = this.getInterfacesByMethods(methods)
 
@@ -290,13 +290,13 @@ export class ContractParser {
         const beaconContract = this.makeContract(beaconContractAddress)
 
         // Get implementation contract address from beacon contract
-        const impContractAddress = await this.call('implementation', beaconContract)
+        const implementationAddress = await this.call('implementation', beaconContract)
 
-        if (!isAddress(impContractAddress)) {
+        if (!isAddress(implementationAddress)) {
           throw new Error('Beacon returns an invalid implementation address')
         }
 
-        result.impContractAddress = impContractAddress
+        result.implementationAddress = implementationAddress
         return result
       } catch (err) {
         this.log.warn(`[${contractAddress}] Error fetching implementation from beacon proxy: ${err}`)
@@ -316,7 +316,8 @@ export class ContractParser {
     const result = {
       address: contractAddress,
       isUpgradeable: false,
-      impContractAddress: null,
+      implementationAddress: null,
+      beaconAddress: null,
       proxyType: null
     }
 
@@ -332,7 +333,7 @@ export class ContractParser {
     if (notZero(implementationSlotValue)) {
       result.proxyType = PROXY_TYPES.OZUnstructuredStorage
       result.isUpgradeable = true
-      result.impContractAddress = formatAddressFromSlot(implementationSlotValue)
+      result.implementationAddress = formatAddressFromSlot(implementationSlotValue)
 
       return result
     }

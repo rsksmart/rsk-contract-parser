@@ -187,7 +187,7 @@ class ContractParser {
     let proxyDetails = {
       address: contractAddress,
       isUpgradeable: false,
-      impContractAddress: null,
+      implementationAddress: null,
       beaconAddress: null,
       proxyType: null,
       methods: [],
@@ -204,8 +204,8 @@ class ContractParser {
       }
     }
 
-    if (proxyDetails.isUpgradeable && (0, _addresses2.isAddress)(proxyDetails.impContractAddress)) {
-      const implementationContractBytecode = await this.getContractCodeFromNode(proxyDetails.impContractAddress);
+    if (proxyDetails.isUpgradeable && (0, _addresses2.isAddress)(proxyDetails.implementationAddress)) {
+      const implementationContractBytecode = await this.getContractCodeFromNode(proxyDetails.implementationAddress);
       const methods = this.getMethodsBySelectors(implementationContractBytecode);
       let interfaces = this.getInterfacesByMethods(methods);
 
@@ -290,13 +290,13 @@ class ContractParser {
         const beaconContract = this.makeContract(beaconContractAddress);
 
         // Get implementation contract address from beacon contract
-        const impContractAddress = await this.call('implementation', beaconContract);
+        const implementationAddress = await this.call('implementation', beaconContract);
 
-        if (!(0, _addresses2.isAddress)(impContractAddress)) {
+        if (!(0, _addresses2.isAddress)(implementationAddress)) {
           throw new Error('Beacon returns an invalid implementation address');
         }
 
-        result.impContractAddress = impContractAddress;
+        result.implementationAddress = implementationAddress;
         return result;
       } catch (err) {
         this.log.warn(`[${contractAddress}] Error fetching implementation from beacon proxy: ${err}`);
@@ -316,7 +316,8 @@ class ContractParser {
     const result = {
       address: contractAddress,
       isUpgradeable: false,
-      impContractAddress: null,
+      implementationAddress: null,
+      beaconAddress: null,
       proxyType: null
     };
 
@@ -332,7 +333,7 @@ class ContractParser {
     if ((0, _utils.notZero)(implementationSlotValue)) {
       result.proxyType = PROXY_TYPES.OZUnstructuredStorage;
       result.isUpgradeable = true;
-      result.impContractAddress = (0, _utils.formatAddressFromSlot)(implementationSlotValue);
+      result.implementationAddress = (0, _utils.formatAddressFromSlot)(implementationSlotValue);
 
       return result;
     }
