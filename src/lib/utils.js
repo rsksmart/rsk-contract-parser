@@ -1,5 +1,6 @@
 import { keccak256, add0x } from '@rsksmart/rsk-utils'
 import { ABI_SIGNATURE, INTERFACE_ID_BYTES } from './types'
+import BigNumber from 'bignumber.js'
 
 export const setAbi = abi => addSignatureDataToAbi(abi, true)
 
@@ -105,4 +106,19 @@ export async function binarySearchNumber (searchCb, high, low) {
   } catch (err) {
     return Promise.reject(err)
   }
+}
+
+export function notZero (value) {
+  if (typeof value === 'string' && /^0x[0-9a-f]*$/i.test(value)) {
+    return !BigNumber(value).isZero()
+  }
+
+  return false
+}
+
+export function formatAddressFromSlot (slot) {
+  if (typeof slot === 'string') {
+    return `0x${slot.slice(-40)}`
+  }
+  return slot
 }

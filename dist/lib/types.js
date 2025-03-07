@@ -14,11 +14,13 @@ const bitcoinRskNetWorks = exports.bitcoinRskNetWorks = {
   33: bitcoinNetworks.REGTEST
 };
 
+// Common contract interfaces
 const contractsInterfaces = exports.contractsInterfaces = {
   ERC20: 'ERC20',
   ERC677: 'ERC677',
   ERC165: 'ERC165',
-  ERC721: 'ERC721'
+  ERC721: 'ERC721',
+  ERC1967: 'ERC1967'
 };
 
 const ci = contractsInterfaces;

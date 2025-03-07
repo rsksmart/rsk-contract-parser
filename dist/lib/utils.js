@@ -1,5 +1,6 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.addSignatureDataToAbi = exports.abiSignatureData = exports.abiMethods = exports.abiEvents = void 0;exports.binarySearchNumber = binarySearchNumber;exports.erc165IdFromMethods = exports.erc165Id = void 0;exports.filterEvents = filterEvents;exports.soliditySignature = exports.soliditySelector = exports.solidityName = exports.setAbi = exports.removeAbiSignatureData = exports.getSignatureDataFromAbi = exports.getInputsIndexes = void 0;var _rskUtils = require("@rsksmart/rsk-utils");
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.addSignatureDataToAbi = exports.abiSignatureData = exports.abiMethods = exports.abiEvents = void 0;exports.binarySearchNumber = binarySearchNumber;exports.erc165IdFromMethods = exports.erc165Id = void 0;exports.filterEvents = filterEvents;exports.formatAddressFromSlot = formatAddressFromSlot;exports.getSignatureDataFromAbi = exports.getInputsIndexes = void 0;exports.notZero = notZero;exports.soliditySignature = exports.soliditySelector = exports.solidityName = exports.setAbi = exports.removeAbiSignatureData = void 0;var _rskUtils = require("@rsksmart/rsk-utils");
 var _types = require("./types");
+var _bignumber = _interopRequireDefault(require("bignumber.js"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 
 const setAbi = (abi) => addSignatureDataToAbi(abi, true);exports.setAbi = setAbi;
 
@@ -105,5 +106,20 @@ async function binarySearchNumber(searchCb, high, low) {
   } catch (err) {
     return Promise.reject(err);
   }
+}
+
+function notZero(value) {
+  if (typeof value === 'string' && /^0x[0-9a-f]*$/i.test(value)) {
+    return !(0, _bignumber.default)(value).isZero();
+  }
+
+  return false;
+}
+
+function formatAddressFromSlot(slot) {
+  if (typeof slot === 'string') {
+    return `0x${slot.slice(-40)}`;
+  }
+  return slot;
 }
 //# sourceMappingURL=utils.js.map

@@ -11,8 +11,11 @@ import {
   removeAbiSignatureData,
   abiSignatureData,
   soliditySelector,
-  soliditySignature
+  soliditySignature,
+  formatAddressFromSlot,
+  notZero
 } from './utils'
+import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
 
 function mapInterfacesToERCs (interfaces) {
   return Object.keys(interfaces)
@@ -22,6 +25,14 @@ function mapInterfacesToERCs (interfaces) {
 
 function hasMethodSelector (txInputData, selector) {
   return selector && txInputData && txInputData.includes(selector)
+}
+
+const PROXY_TYPES = {
+  EIP1967: {
+    Normal: 'EIP-1967 Normal',
+    Beacon: 'EIP-1967 Beacon'
+  },
+  OZUnstructuredStorage: 'Open Zeppelin Unstructured Storage (pre EIP-1967)'
 }
 
 export class ContractParser {
@@ -54,9 +65,9 @@ export class ContractParser {
     this.abi = setAbi(abi)
   }
 
-  getMethodsSelectors () {
+  getMethodsSelectors (abi) {
     let selectors = {}
-    let methods = this.getAbiMethods()
+    let methods = this.getAbiMethods(abi)
     for (let m in methods) {
       let method = methods[m]
       let signature = method.signature || soliditySignature(m)
@@ -65,9 +76,10 @@ export class ContractParser {
     return selectors
   }
 
-  getAbiMethods () {
+  getAbiMethods (fromAbi) {
     let methods = {}
-    this.abi.filter(def => def.type === 'function')
+    const abi = fromAbi || this.abi
+    abi.filter(def => def.type === 'function')
       .map(m => {
         let sig = m[ABI_SIGNATURE] || abiSignatureData(m)
         sig.name = m.name
@@ -171,18 +183,38 @@ export class ContractParser {
     return { methods, interfaces }
   }
 
-  async getEIP1967Info (contractAddress) {
-    const { isUpgradeable, impContractAddress } = await this.isERC1967(contractAddress)
-    if (isUpgradeable) {
-      // manual check required
-      const proxyContractBytecode = await this.getContractCodeFromNode(impContractAddress)
-      const methods = this.getMethodsBySelectors(proxyContractBytecode)
+  async getProxyDetails (contractAddress) {
+    let proxyDetails = {
+      address: contractAddress,
+      isUpgradeable: false,
+      impContractAddress: null,
+      beaconAddress: null,
+      proxyType: null,
+      methods: [],
+      interfaces: []
+    }
+
+    const ERC1967ProxyDetails = await this.isERC1967Proxy(contractAddress)
+    if (ERC1967ProxyDetails.isUpgradeable) {
+      proxyDetails = ERC1967ProxyDetails
+    } else {
+      const OZUnstructuredStorageProxyDetails = await this.isOZUnstructuredStorageProxy(contractAddress)
+      if (OZUnstructuredStorageProxyDetails.isUpgradeable) {
+        proxyDetails = OZUnstructuredStorageProxyDetails
+      }
+    }
+
+    if (proxyDetails.isUpgradeable && isAddress(proxyDetails.impContractAddress)) {
+      const implementationContractBytecode = await this.getContractCodeFromNode(proxyDetails.impContractAddress)
+      const methods = this.getMethodsBySelectors(implementationContractBytecode)
       let interfaces = this.getInterfacesByMethods(methods)
 
-      interfaces = mapInterfacesToERCs(interfaces)
-      return { methods, interfaces: [...interfaces, 'ERC1967'] }
+      // Set implementation methods and interfaces
+      proxyDetails.interfaces = [...mapInterfacesToERCs(interfaces), contractsInterfaces.ERC1967]
+      proxyDetails.methods = methods
     }
-    return {methods: [], interfaces: []}
+
+    return proxyDetails
   }
 
   async getContractImplementedInterfaces (txInputData, contract) {
@@ -202,18 +234,114 @@ export class ContractParser {
     return { methods, interfaces }
   }
 
-  async isERC1967 (contractAddress) {
-    // check For ERC1967
-    // https://eips.ethereum.org/EIPS/eip-1967
-    // 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc storage address where the implementation address is stored
-    const storedValue = await this.nod3.eth.getStorageAt(contractAddress, '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc')
-    const isUpgradeable = storedValue !== '0x0'
-    if (isUpgradeable) {
-      const impContractAddress = `0x${storedValue.slice(-40)}` // extract contract address
-      return { isUpgradeable, impContractAddress }
-    } else {
-      return { isUpgradeable, impContractAddress: storedValue }
+  // EIP-1967 Standard for Proxies
+  // https://eips.ethereum.org/EIPS/eip-1967
+  async isERC1967Proxy (contractAddress) {
+    const result = {
+      address: contractAddress,
+      isUpgradeable: false,
+      implementationAddress: null,
+      beaconAddress: null,
+      proxyType: null
     }
+
+    // Normal Proxies
+    const implementationSlot = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+
+    let implementationSlotValue
+    try {
+      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot)
+    } catch (err) {
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.EIP1967.Normal}: ${err}`)
+      return result
+    }
+
+    if (notZero(implementationSlotValue)) {
+      result.proxyType = PROXY_TYPES.EIP1967.Normal
+      result.isUpgradeable = true
+      result.implementationAddress = formatAddressFromSlot(implementationSlotValue)
+      return result
+    }
+
+    // Beacon Proxies
+    const beaconSlot = '0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50'
+
+    let beaconSlotValue
+    try {
+      beaconSlotValue = await this.getStorageSlotValueFromNode(contractAddress, beaconSlot)
+    } catch (err) {
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.EIP1967.Beacon}: ${err}`)
+      return result
+    }
+
+    if (notZero(beaconSlotValue)) {
+      result.proxyType = PROXY_TYPES.EIP1967.Beacon
+      result.isUpgradeable = true
+
+      try {
+        // Get beacon contract address
+        const beaconContractAddress = formatAddressFromSlot(beaconSlotValue)
+
+        if (!isAddress(beaconContractAddress)) {
+          throw new Error('Invalid beacon contract address')
+        }
+
+        // Create contract instance for the beacon
+        const beaconContract = this.makeContract(beaconContractAddress)
+
+        // Get implementation contract address from beacon contract
+        const impContractAddress = await this.call('implementation', beaconContract)
+
+        if (!isAddress(impContractAddress)) {
+          throw new Error('Beacon returns an invalid implementation address')
+        }
+
+        result.impContractAddress = impContractAddress
+        return result
+      } catch (err) {
+        this.log.warn(`[${contractAddress}] Error fetching implementation from beacon proxy: ${err}`)
+        return result
+      }
+    }
+
+    // Not a proxy contract
+    return result
+  }
+
+  // Open Zeppelin Unstructured Storage Pattern (before EIP-1967)
+  // Article: https://blog.openzeppelin.com/proxy-patterns
+  // Repository: https://github.com/OpenZeppelin/openzeppelin-labs/tree/master/upgradeability_using_unstructured_storage
+  // Contract: https://github.com/OpenZeppelin/openzeppelin-labs/blob/master/upgradeability_using_unstructured_storage/contracts/UpgradeabilityProxy.sol
+  async isOZUnstructuredStorageProxy (contractAddress) {
+    const result = {
+      address: contractAddress,
+      isUpgradeable: false,
+      impContractAddress: null,
+      proxyType: null
+    }
+
+    const implementationSlot = '0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3'
+    let implementationSlotValue
+    try {
+      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot)
+    } catch (err) {
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.OZUnstructuredStorage}: ${err}`)
+      return result
+    }
+
+    if (notZero(implementationSlotValue)) {
+      result.proxyType = PROXY_TYPES.OZUnstructuredStorage
+      result.isUpgradeable = true
+      result.impContractAddress = formatAddressFromSlot(implementationSlotValue)
+
+      return result
+    }
+
+    return result
+  }
+
+  async getStorageSlotValueFromNode (contractAddress, slot) {
+    return this.nod3.eth.getStorageAt(contractAddress, slot)
   }
 
   async getContractCodeFromNode (contractAddress) {
