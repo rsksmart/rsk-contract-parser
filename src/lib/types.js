@@ -20,7 +20,8 @@ export const contractsInterfaces = {
   ERC677: 'ERC677',
   ERC165: 'ERC165',
   ERC721: 'ERC721',
-  ERC1967: 'ERC1967'
+  ERC1822: 'ERC1822', // Universal Upgradeable Proxy Standard (UUPS)
+  ERC1967: 'ERC1967' // ERC 1967 standard for proxies
 }
 
 const ci = contractsInterfaces

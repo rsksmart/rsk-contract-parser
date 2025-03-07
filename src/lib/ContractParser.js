@@ -17,16 +17,35 @@ import {
 } from './utils'
 import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
 
+/**
+ * Maps interfaces to ERCs.
+ * @param {Object} interfaces - The interfaces to map
+ * @returns {Array} The mapped interfaces
+ */
 function mapInterfacesToERCs (interfaces) {
   return Object.keys(interfaces)
     .filter(k => interfaces[k] === true)
     .map(t => contractsInterfaces[t] || t)
 }
 
-function hasMethodSelector (txInputData, selector) {
-  return selector && txInputData && txInputData.includes(selector)
+/**
+ * Checks if a contract bytecode contains a method selector.
+ * @param {string} contractByteCode - The bytecode of the contract
+ * @param {string} selector - The selector to check for
+ * @returns {boolean} True if the selector is found in the contract bytecode, false otherwise
+ */
+function hasMethodSelector (contractByteCode, selector) {
+  return selector && contractByteCode && contractByteCode.includes(selector)
 }
 
+/**
+ * Constants for proxy types.
+ * @type {Object}
+ * @property {Object} EIP1967 - Constants for EIP-1967 proxy types
+ * @property {string} EIP1967.Normal - Normal EIP-1967 proxy type
+ * @property {string} EIP1967.Beacon - Beacon EIP-1967 proxy type
+ * @property {string} OZUnstructuredStorage - Open Zeppelin Unstructured Storage proxy type
+ */
 const PROXY_TYPES = {
   EIP1967: {
     Normal: 'EIP-1967 Normal',
@@ -35,7 +54,29 @@ const PROXY_TYPES = {
   OZUnstructuredStorage: 'Open Zeppelin Unstructured Storage (pre EIP-1967)'
 }
 
+/**
+ * The ContractParser class handles the analysis and interpretation of Ethereum smart contracts.
+ *
+ * This class provides comprehensive functionality for working with contract ABIs,
+ * transaction data, and event logs in blockchain networks. It enables:
+ *
+ * - Decoding of contract method calls and event signatures
+ * - Identification of implemented interfaces (ERC standards)
+ * - Analysis of proxy patterns with implementation resolution
+ * - Processing of native contract events specific to RSK networks
+ */
 export class ContractParser {
+  /**
+   * Creates a new ContractParser instance.
+   * @param {Object} options - Configuration options
+   * @param {Array} [options.abi] - The Application Binary Interface (ABI) used for decoding. If not provided, a default ABI is used, however its strongly recommended to provide the full ABI.
+   * @param {Object} [options.log=console] - Logging mechanism to use for error and debug messages
+   * @param {Object} [options.initConfig] - Initial configuration object
+   * @param {Object} [options.initConfig.net] - Network configuration information
+   * @param {string|number} [options.initConfig.net.id] - Network ID used to determine RSK/Bitcoin network
+   * @param {Object} [options.nod3] - Nod3 instance for making blockchain calls
+   * @param {number} [options.txBlockNumber] - Transaction's block number for accurate event decoding
+   */
   constructor ({ abi, log, initConfig, nod3, txBlockNumber } = {}) {
     initConfig = initConfig || {}
     const { net } = initConfig
@@ -50,10 +91,19 @@ export class ContractParser {
     }
   }
 
+  /**
+   * Sets the Nod3 instance for making blockchain calls.
+   * @param {Object} nod3 - Nod3 instance for making blockchain calls
+   */
   setNod3 (nod3) {
     this.nod3 = nod3
   }
 
+  /**
+   * Retrieves the address of a native contract.
+   * @param {string} name - The name of the native contract
+   * @returns {string} The address of the native contract
+   */
   getNativeContractAddress (name) {
     const { nativeContracts } = this
     if (nativeContracts) {
@@ -61,13 +111,31 @@ export class ContractParser {
     }
   }
 
+  /**
+   * Sets the ABI for the ContractParser instance.
+   * @param {Array} abi - The Application Binary Interface (ABI) to use for decoding
+   */
   setAbi (abi) {
-    this.abi = setAbi(abi)
+    try {
+      if (!Array.isArray(abi)) {
+        throw new Error('ABI must be an array')
+      }
+
+      this.abi = setAbi(abi)
+    } catch (error) {
+      this.log.error('Error setting ABI. Switching back to default ABI.', error)
+      this.abi = setAbi(defaultABI)
+    }
   }
 
+  /**
+   * Retrieves the methods and their selectors from the ABI.
+   * @param {Array} abi - The Application Binary Interface (ABI) to use for decoding
+   * @returns {Object} An object containing method names as keys and their selectors as values
+   */
   getMethodsSelectors (abi) {
     let selectors = {}
-    let methods = this.getAbiMethods(abi)
+    let methods = this.getAbiMethods(abi || this.abi)
     for (let m in methods) {
       let method = methods[m]
       let signature = method.signature || soliditySignature(m)
@@ -76,6 +144,11 @@ export class ContractParser {
     return selectors
   }
 
+  /**
+   * Retrieves the methods and their signatures from the ABI.
+   * @param {Array} fromAbi - The ABI to use for decoding
+   * @returns {Object} An object containing method names as keys and their signatures as values
+   */
   getAbiMethods (fromAbi) {
     let methods = {}
     const abi = fromAbi || this.abi
@@ -88,6 +161,12 @@ export class ContractParser {
     return methods
   }
 
+  /**
+   * Parses transaction logs and returns decoded events.
+   * @param {Array} logs - The transaction logs to parse
+   * @param {Array} [abi] - The Application Binary Interface (ABI) to use for decoding
+   * @returns {Array} An array of decoded events
+   */
   parseTxLogs (logs, abi) {
     return this.decodeLogs(logs, abi).map(event => {
       this.addEventAddresses(event)
@@ -96,6 +175,10 @@ export class ContractParser {
     })
   }
 
+  /**
+   * Adds event addresses to the event object.
+   * @param {Object} event - The event object to add addresses to
+   */
   addEventAddresses (event) {
     const { abi, args } = event
     let _addresses = event._addresses || []
@@ -123,6 +206,12 @@ export class ContractParser {
     return event
   }
 
+  /**
+   * Decodes transaction logs and returns decoded events.
+   * @param {Array} logs - The transaction logs to decode
+   * @param {Array} [abi] - The Application Binary Interface (ABI) to use for decoding
+   * @returns {Array} An array of decoded events
+   */
   decodeLogs (logs, abi) {
     abi = abi || this.abi
     const eventDecoder = EventDecoder(abi, this.log)
@@ -138,23 +227,40 @@ export class ContractParser {
     })
   }
 
+  /**
+   * Creates a contract instance, useful for calling methods on the contract.
+   * @param {string} address - The address of the contract
+   * @param {Array} [abi] - The Application Binary Interface (ABI) to use for the contract
+   * @returns {Object} A contract instance
+   */
   makeContract (address, abi) {
     abi = abi || this.abi
     let { nod3 } = this
     return Contract(abi, { address, nod3 })
   }
 
+  /**
+   * Calls a method on a contract.
+   * @param {string} method - The method to call
+   * @param {Object} contract - The contract object
+   * @param {Array} [params] - The parameters to pass to the method
+   * @param {Object} [options] - The options for the call
+   */
   async call (method, contract, params = [], options = {}) {
     try {
       const res = await contract.call(method, params, options)
       return res
     } catch (err) {
-      // temporary fix to avoid errored contract calls spam logs
-      // this.log.warn(`Method ${method} call ${err}`)
       return null
     }
   }
 
+  /**
+   * Retrieves token data from a contract.
+   * @param {Object} contract - The contract object
+   * @param {Object} [options] - The options for the token data retrieval
+   * @returns {Promise<Object>} The token data
+   */
   async getTokenData (contract, { methods } = {}) {
     methods = methods || ['name', 'symbol', 'decimals', 'totalSupply']
     let result = await Promise.all(
@@ -170,19 +276,37 @@ export class ContractParser {
     }, {})
   }
 
-  getMethodsBySelectors (txInputData) {
+  /**
+   * Retrieves the methods from the contract bytecode.
+   * @param {string} contractByteCode - The bytecode of the contract. This also happens to be the txInputData on contract creation txs
+   * @returns {Object} An object containing method names as keys and their selectors as values
+   */
+  getMethodsFromContractByteCode (contractByteCode) {
     let methods = this.getMethodsSelectors()
     return Object.keys(methods)
-      .filter(method => hasMethodSelector(txInputData, methods[method]) === true)
+      .filter(method => hasMethodSelector(contractByteCode, methods[method]) === true)
   }
 
-  async getContractInfo (txInputData, contract) {
-    let { interfaces, methods } = await this.getContractImplementedInterfaces(txInputData, contract)
+  /**
+   * Retrieves the contract information from the contract bytecode.
+   * @param {string} contractByteCode - The bytecode of the contract. This also happens to be the txInputData on contract creation txs
+   * @param {Object} contract - The contract object
+   * @returns {Object} An object containing the methods and interfaces of the contract
+   */
+  async getContractMethodsAndERCInterfaces (contractByteCode, contract) {
+    const { interfaces, methods } = await this.getContractImplementedInterfaces(contractByteCode, contract)
 
-    interfaces = mapInterfacesToERCs(interfaces)
-    return { methods, interfaces }
+    return {
+      methods,
+      interfaces: mapInterfacesToERCs(interfaces)
+    }
   }
 
+  /**
+   * Retrieves the proxy details of a contract.
+   * @param {string} contractAddress - The address of the contract
+   * @returns {Promise<Object>} The proxy details
+   */
   async getProxyDetails (contractAddress) {
     let proxyDetails = {
       address: contractAddress,
@@ -194,31 +318,54 @@ export class ContractParser {
       interfaces: []
     }
 
+    // ERC 1967 standard for proxies
     const ERC1967ProxyDetails = await this.isERC1967Proxy(contractAddress)
     if (ERC1967ProxyDetails.isUpgradeable) {
       proxyDetails = ERC1967ProxyDetails
+
+      if (isAddress(proxyDetails.implementationAddress)) {
+        // Set implementation methods and interfaces
+        const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(proxyDetails.implementationAddress)
+        proxyDetails.methods = methods
+        proxyDetails.interfaces = [
+          ...interfaces,
+          contractsInterfaces.ERC1822,
+          contractsInterfaces.ERC1967
+        ]
+      }
+
+      return proxyDetails
     } else {
+      // Open Zeppelin Unstructured Storage Pattern (before EIP-1967)
       const OZUnstructuredStorageProxyDetails = await this.isOZUnstructuredStorageProxy(contractAddress)
       if (OZUnstructuredStorageProxyDetails.isUpgradeable) {
         proxyDetails = OZUnstructuredStorageProxyDetails
+
+        if (isAddress(proxyDetails.implementationAddress)) {
+          // Set implementation methods and interfaces
+          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(proxyDetails.implementationAddress)
+          proxyDetails.methods = methods
+          proxyDetails.interfaces = [
+            ...interfaces,
+            contractsInterfaces.ERC1822
+          ]
+        }
+
+        return proxyDetails
       }
-    }
-
-    if (proxyDetails.isUpgradeable && isAddress(proxyDetails.implementationAddress)) {
-      const implementationContractBytecode = await this.getContractCodeFromNode(proxyDetails.implementationAddress)
-      const methods = this.getMethodsBySelectors(implementationContractBytecode)
-      let interfaces = this.getInterfacesByMethods(methods)
-
-      // Set implementation methods and interfaces
-      proxyDetails.interfaces = [...mapInterfacesToERCs(interfaces), contractsInterfaces.ERC1967]
-      proxyDetails.methods = methods
     }
 
     return proxyDetails
   }
 
-  async getContractImplementedInterfaces (txInputData, contract) {
-    let methods = this.getMethodsBySelectors(txInputData)
+  /**
+   * Retrieves the implemented interfaces of the contract.
+   * @param {string} contractByteCode - The byte code of the contract. This also happens to be the txInputData on contract creation txs
+   * @param {Object} contract - The contract object
+   * @returns {Object} An object containing the methods and interfaces of the contract
+   */
+  async getContractImplementedInterfaces (contractByteCode, contract) {
+    let methods = this.getMethodsFromContractByteCode(contractByteCode)
     let isErc165 = false
     //  skip non-erc165 contracts
     if (includesAll(methods, ['supportsInterface(bytes4)'])) {
@@ -234,8 +381,12 @@ export class ContractParser {
     return { methods, interfaces }
   }
 
-  // EIP-1967 Standard for Proxies
-  // https://eips.ethereum.org/EIPS/eip-1967
+  /**
+   * Checks if the contract is a proxy contract using the ERC1967 standard.
+   * @param {string} contractAddress - The address of the contract
+   * @returns {Object} An object containing the proxy details
+   * @see https://eips.ethereum.org/EIPS/eip-1967
+   */
   async isERC1967Proxy (contractAddress) {
     const result = {
       address: contractAddress,
@@ -341,14 +492,30 @@ export class ContractParser {
     return result
   }
 
+  /**
+   * Retrieves the value of a storage slot from the node.
+   * @param {string} contractAddress - The address of the contract
+   * @param {string} slot - The slot to retrieve the value from
+   * @returns {Promise<string>} The value of the storage slot
+   */
   async getStorageSlotValueFromNode (contractAddress, slot) {
     return this.nod3.eth.getStorageAt(contractAddress, slot)
   }
 
+  /**
+   * Retrieves the contract code from the node.
+   * @param {string} contractAddress - The address of the contract
+   * @returns {Promise<string>} The contract code
+   */
   async getContractCodeFromNode (contractAddress) {
     return this.nod3.eth.getContractCodeAt(contractAddress)
   }
 
+  /**
+   * Retrieves the interfaces of the contract based on the ERC165 standard.
+   * @param {Object} contract - The contract object
+   * @returns {Promise<Object>} An object containing the interfaces of the contract
+   */
   async getInterfacesERC165 (contract) {
     let ifaces = {}
     let keys = Object.keys(interfacesIds)
@@ -358,7 +525,12 @@ export class ContractParser {
     return ifaces
   }
 
-  getInterfacesByMethods (methods, isErc165) {
+  /**
+   * Retrieves the interfaces of the contract based on the methods.
+   * @param {Array} methods - The methods of the contract
+   * @returns {Object} An object containing the interfaces of the contract
+   */
+  getInterfacesByMethods (methods) {
     return Object.keys(interfacesIds)
       .map(i => {
         return [i, includesAll(methods, interfacesIds[i].methods)]
@@ -369,6 +541,12 @@ export class ContractParser {
       }, {})
   }
 
+  /**
+   * Checks if the contract supports a specific interface.
+   * @param {Object} contract - The contract object
+   * @param {string} interfaceId - The ID of the interface to check
+   * @returns {Promise<boolean>} True if the contract supports the interface, false otherwise
+   */
   async supportsInterface (contract, interfaceId) {
     // fixed gas to prevent infinite loops
     let options = { gas: '0x7530' }
@@ -376,6 +554,11 @@ export class ContractParser {
     return res
   }
 
+  /**
+   * Checks if the contract implements the ERC165 standard.
+   * @param {Object} contract - The contract object
+   * @returns {Promise<boolean>} True if the contract implements the ERC165 standard, false otherwise
+   */
   async implementsErc165 (contract) {
     try {
       let first = await this.supportsInterface(contract, interfacesIds.ERC165.id)
