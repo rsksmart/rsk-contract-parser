@@ -1,6 +1,6 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.addSignatureDataToAbi = exports.abiSignatureData = exports.abiMethods = exports.abiEvents = void 0;exports.binarySearchNumber = binarySearchNumber;exports.erc165IdFromMethods = exports.erc165Id = void 0;exports.filterEvents = filterEvents;exports.formatAddressFromSlot = formatAddressFromSlot;exports.getSignatureDataFromAbi = exports.getInputsIndexes = void 0;exports.notZero = notZero;exports.soliditySignature = exports.soliditySelector = exports.solidityName = exports.setAbi = exports.removeAbiSignatureData = void 0;var _rskUtils = require("@rsksmart/rsk-utils");
 var _types = require("./types");
-var _bignumber = _interopRequireDefault(require("bignumber.js"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _bignumber = _interopRequireDefault(require("bignumber.js"));function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 
 const setAbi = (abi) => addSignatureDataToAbi(abi, true);exports.setAbi = setAbi;
 

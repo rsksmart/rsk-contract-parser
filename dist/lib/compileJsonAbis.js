@@ -2,7 +2,7 @@
 var _util = _interopRequireDefault(require("util"));
 var _path = _interopRequireDefault(require("path"));
 var _types = require("./types");
-var _utils = require("./utils");function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _utils = require("./utils");function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 
 const readDir = _util.default.promisify(_fs.default.readdir);
 const readFile = _util.default.promisify(_fs.default.readFile);

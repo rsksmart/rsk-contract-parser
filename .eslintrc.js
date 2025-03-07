@@ -6,5 +6,9 @@ module.exports = {
     "env": {
         "node": true,
         "mocha": true
+    },
+    "parser": "@babel/eslint-parser",
+    "parserOptions": {
+        "ecmaVersion": 2022,
     }
 };

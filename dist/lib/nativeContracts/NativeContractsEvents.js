@@ -1,6 +1,6 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.NativeContractsEvents = NativeContractsEvents;exports.default = void 0;var _rskUtils = require("@rsksmart/rsk-utils");
 var _utils = require("../utils");
-var _FakeABI = _interopRequireDefault(require("./FakeABI"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _FakeABI = _interopRequireDefault(require("./FakeABI"));function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 function NativeContractsEvents({ bitcoinNetwork } = {}) {
   const network = bitcoinNetwork || 'testnet';
   const fakeAbi = (0, _FakeABI.default)(network);

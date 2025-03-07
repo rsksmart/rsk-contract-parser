@@ -15,7 +15,7 @@ var _utils = require("./utils");
 
 
 
-var _addresses2 = require("@rsksmart/rsk-utils/dist/addresses");function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _addresses2 = require("@rsksmart/rsk-utils/dist/addresses");function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 
 /**
  * Maps interfaces to ERCs.

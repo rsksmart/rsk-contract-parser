@@ -3,7 +3,7 @@ var _bridgeWasabi = _interopRequireDefault(require("./bridge-wasabi.json"));
 var _bridgePapyrus = _interopRequireDefault(require("./bridge-papyrus.json"));
 var _bridgeIris = _interopRequireDefault(require("./bridge-iris.json"));
 var _bridgeFingerroot = _interopRequireDefault(require("./bridge-fingerroot.json"));
-var _bridgeHop = _interopRequireDefault(require("./bridge-hop.json"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _bridgeHop = _interopRequireDefault(require("./bridge-hop.json"));function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 
 const RELEASES = exports.RELEASES = {
   mainnet: [
