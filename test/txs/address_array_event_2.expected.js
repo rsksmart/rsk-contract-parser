@@ -22,56 +22,56 @@ export default {
           description: 'SIP-0007: Origins Pre-Sale. Details: https://github.com/DistributedCollective/SIPS/blob/02f836980ee6a4b2992ffb1576e42655ac6fc241/SIP-0006.md , sha256: b6807ded0bd18ddd9d29e189179e23b6d63ef86e93b79143ed03c563770a490d'
         },
         abi: {
-          "anonymous": false,
-          "inputs": [
+          'anonymous': false,
+          'inputs': [
             {
-              "indexed": false,
-              "name": "id",
-              "type": "uint256"
+              'indexed': false,
+              'name': 'id',
+              'type': 'uint256'
             },
             {
-              "indexed": false,
-              "name": "proposer",
-              "type": "address"
+              'indexed': false,
+              'name': 'proposer',
+              'type': 'address'
             },
             {
-              "indexed": false,
-              "name": "targets",
-              "type": "address[]"
+              'indexed': false,
+              'name': 'targets',
+              'type': 'address[]'
             },
             {
-              "indexed": false,
-              "name": "values",
-              "type": "uint256[]"
+              'indexed': false,
+              'name': 'values',
+              'type': 'uint256[]'
             },
             {
-              "indexed": false,
-              "name": "signatures",
-              "type": "string[]"
+              'indexed': false,
+              'name': 'signatures',
+              'type': 'string[]'
             },
             {
-              "indexed": false,
-              "name": "calldatas",
-              "type": "bytes[]"
+              'indexed': false,
+              'name': 'calldatas',
+              'type': 'bytes[]'
             },
             {
-              "indexed": false,
-              "name": "startBlock",
-              "type": "uint256"
+              'indexed': false,
+              'name': 'startBlock',
+              'type': 'uint256'
             },
             {
-              "indexed": false,
-              "name": "endBlock",
-              "type": "uint256"
+              'indexed': false,
+              'name': 'endBlock',
+              'type': 'uint256'
             },
             {
-              "indexed": false,
-              "name": "description",
-              "type": "string"
+              'indexed': false,
+              'name': 'description',
+              'type': 'string'
             }
           ],
-          "name": "ProposalCreated",
-          "type": "event"
+          'name': 'ProposalCreated',
+          'type': 'event'
         }
       }
     ]

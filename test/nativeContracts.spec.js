@@ -52,7 +52,6 @@ describe(`#NativeContracts`, function () {
     })
 
     describe(`isNativeContract()`, function () {
-
       it(`should return true`, () => {
         expect(isNativeContract(addresses[0])).to.be.deep.equal(true)
       })

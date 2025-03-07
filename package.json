@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "lint": "npx eslint src/**/* --quiet",
+    "lint": "npx eslint src/**/* test/**/* --quiet",
     "test": "npx mocha",
     "test:local": "npx mocha test/compiler.spec.js test/events.spec.js test/nativeContracts.spec.js test/bridgeAbi.spec.js",
     "build": "npx babel src -d dist --copy-files",
