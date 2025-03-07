@@ -293,7 +293,8 @@ class ContractParser {
    * @param {Object} contract - The contract object
    * @returns {Object} An object containing the methods and interfaces of the contract
    */
-  async getContractMethodsAndERCInterfaces(contractByteCode, contract) {
+  async getContractMethodsAndERCInterfaces(address, contract) {
+    const contractByteCode = await this.getContractCodeFromNode(address);
     const { interfaces, methods } = await this.getContractImplementedInterfaces(contractByteCode, contract);
 
     return {
@@ -325,7 +326,10 @@ class ContractParser {
 
       if ((0, _addresses2.isAddress)(proxyDetails.implementationAddress)) {
         // Set implementation methods and interfaces
-        const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(proxyDetails.implementationAddress);
+        const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(
+          proxyDetails.implementationAddress,
+          this.makeContract(proxyDetails.implementationAddress)
+        );
         proxyDetails.methods = methods;
         proxyDetails.interfaces = [
         ...interfaces,
@@ -338,12 +342,16 @@ class ContractParser {
     } else {
       // Open Zeppelin Unstructured Storage Pattern (before EIP-1967)
       const OZUnstructuredStorageProxyDetails = await this.isOZUnstructuredStorageProxy(contractAddress);
+
       if (OZUnstructuredStorageProxyDetails.isUpgradeable) {
         proxyDetails = OZUnstructuredStorageProxyDetails;
 
         if ((0, _addresses2.isAddress)(proxyDetails.implementationAddress)) {
           // Set implementation methods and interfaces
-          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(proxyDetails.implementationAddress);
+          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(
+            proxyDetails.implementationAddress,
+            this.makeContract(proxyDetails.implementationAddress)
+          );
           proxyDetails.methods = methods;
           proxyDetails.interfaces = [
           ...interfaces,
