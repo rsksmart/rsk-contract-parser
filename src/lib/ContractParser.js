@@ -101,7 +101,7 @@ export class ContractParser {
   }
 
   /**
-   * Retrieves the address of a native contract.
+   * Retrieves the address of a native contract
    * @param {string} name - The name of the native contract
    * @returns {string} The address of the native contract
    */
@@ -229,21 +229,21 @@ export class ContractParser {
   }
 
   /**
-   * Creates a contract instance, useful for calling methods on the contract.
+   * Creates a contract instance, useful for calling methods on the contract
    * @param {string} address - The address of the contract
    * @param {Array} [abi] - The Application Binary Interface (ABI) to use for the contract
-   * @returns {Object} A contract instance
+   * @returns {Contract} A contract instance
    */
   makeContract (address, abi) {
     abi = abi || this.abi
     let { nod3 } = this
-    return Contract(abi, { address, nod3 })
+    return new Contract(abi, { address, nod3 })
   }
 
   /**
-   * Calls a method on a contract.
+   * Calls a method on a contract
    * @param {string} method - The method to call
-   * @param {Object} contract - The contract object
+   * @param {Contract} contract - The contract object
    * @param {Array} [params] - The parameters to pass to the method
    * @param {Object} [options] - The options for the call
    */
@@ -252,14 +252,14 @@ export class ContractParser {
       const res = await contract.call(method, params, options)
       return res
     } catch (err) {
-      this.log.trace(`[${contract.address}] Error calling ${method}: ${err}`)
+      this.log.trace(`[Contract: ${contract.getAddress()}] Error calling ${method}: ${err}`)
       return null
     }
   }
 
   /**
-   * Retrieves token data from a contract.
-   * @param {Object} contract - The contract object
+   * Retrieves token data from a contract
+   * @param {Contract} contract - The contract object
    * @param {Object} [options] - The options for the token data retrieval
    * @returns {Promise<Object>} The token data
    */
@@ -269,7 +269,7 @@ export class ContractParser {
       methods.map(m =>
         this.call(m, contract)
           .then(res => res)
-          .catch(err => this.log.debug(`[${contract.address}] Error executing ${m}  Error: ${err}`)))
+          .catch(err => this.log.debug(`[Contract: ${contract.getAddress()}] Error executing ${m}  Error: ${err}`)))
     )
     return result.reduce((v, a, i) => {
       let name = methods[i]
@@ -280,7 +280,7 @@ export class ContractParser {
 
   /**
    * Retrieves the methods from the contract bytecode.
-   * @param {string} contractByteCode - The bytecode of the contract. This also happens to be the txInputData on contract creation txs
+   * @param {string} contractByteCode - The contract bytecode. This also happens to be the txInputData on contract creation txs
    * @returns {Object} An object containing method names as keys and their selectors as values
    */
   getMethodsFromContractByteCode (contractByteCode) {
@@ -291,7 +291,7 @@ export class ContractParser {
 
   /**
    * Retrieves the contract information from the contract bytecode.
-   * @param {string} contractByteCode - The bytecode of the contract. This also happens to be the txInputData on contract creation txs
+   * @param {string} contractByteCode - The contract bytecode. This also happens to be the txInputData on contract creation txs
    * @param {Object} contract - The contract object
    * @returns {Object} An object containing the methods and interfaces of the contract
    */
@@ -306,7 +306,7 @@ export class ContractParser {
   }
 
   /**
-   * Retrieves the proxy details of a contract.
+   * Retrieves the proxy details of a contract
    * @param {string} contractAddress - The address of the contract
    * @returns {Promise<Object>} The proxy details
    */
@@ -369,8 +369,8 @@ export class ContractParser {
   }
 
   /**
-   * Retrieves the implemented interfaces of the contract.
-   * @param {string} contractByteCode - The byte code of the contract. This also happens to be the txInputData on contract creation txs
+   * Retrieves the implemented interfaces of the contract
+   * @param {string} contractByteCode - The contract bytecode. This also happens to be the txInputData on contract creation txs
    * @param {Object} contract - The contract object
    * @returns {Object} An object containing the methods and interfaces of the contract
    */
@@ -553,7 +553,7 @@ export class ContractParser {
 
   /**
    * Checks if the contract supports a specific interface.
-   * @param {Object} contract - The contract object
+   * @param {Contract} contract - The contract object
    * @param {string} interfaceId - The ID of the interface to check
    * @returns {Promise<boolean>} True if the contract supports the interface, false otherwise
    * @see https://eips.ethereum.org/EIPS/eip-165
@@ -574,7 +574,7 @@ export class ContractParser {
       console.dir({ res }, { depth: null })
       return res
     } catch (err) {
-      console.warn(`[${contract.address}] Error calling supportsInterface for interfaceId ${interfaceId}: ${err}`)
+      console.warn(`[Contract: ${contract.getAddress()}] Error calling supportsInterface for interfaceId ${interfaceId}: ${err}`)
     }
 
     // Go back to previous abi

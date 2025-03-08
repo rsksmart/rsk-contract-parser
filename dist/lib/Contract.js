@@ -1,49 +1,111 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = Contract;var _abi = require("@ethersproject/abi");
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _abi = require("@ethersproject/abi");
 
-function Contract(abi, { address, nod3 } = {}) {
-  if (!abi || typeof abi !== 'object') throw new Error('Invalid abi');
+/**
+ * Contract class allows interaction with a contract on the blockchain.
+ */
+class Contract {
+  /**
+   * Creates a contract instance to interact with a blockchain contract.
+   * @param {Object} abi - The contract ABI
+   * @param {Object} options - The options object
+   * @param {string} options.address - The address of the contract
+   * @param {Object} options.nod3 - The nod3 instance
+   * @throws {Error} If the ABI is invalid
+   */
+  constructor(abi, { address, nod3 } = {}) {
+    if (!abi || typeof abi !== 'object') throw new Error('Invalid abi');
 
-  let contractInterface = new _abi.Interface(abi);
+    this.abi = abi;
+    this.address = address;
+    this.nod3 = nod3;
+    this.contractInterface = new _abi.Interface(abi);
+  }
 
-  const at = (newAddress) => {
-    address = newAddress;
-  };
+  /**
+   * Sets the address of the contract.
+   * @param {string} newAddress - The new address of the contract
+   */
+  setAddress(newAddress) {
+    this.address = newAddress;
+  }
 
-  const setNod3 = (nod3Instance) => {
-    nod3 = nod3Instance;
-  };
+  /**
+   * Gets the address of the contract.
+   * @returns {string} The address of the contract
+   */
+  getAddress() {
+    return this.address;
+  }
 
-  const getAbi = () => abi;
+  /**
+   * Sets the nod3 instance.
+   * @param {Object} nod3Instance - The nod3 instance
+   */
+  setNod3(nod3Instance) {
+    this.nod3 = nod3Instance;
+  }
 
-  const setAbi = (newAbi) => {
-    abi = newAbi;
-    contractInterface = new _abi.Interface(abi);
-  };
+  /**
+   * Gets the contract ABI.
+   * @returns {Object} The contract ABI
+   */
+  getAbi() {
+    return this.abi;
+  }
 
-  // const isEvent = name => abiFind('event', name)
+  /**
+   * Sets the contract ABI.
+   * @param {Object} newAbi - The new contract ABI
+   */
+  setAbi(newAbi) {
+    this.abi = newAbi;
+    this.contractInterface = new _abi.Interface(newAbi);
+  }
 
-  const encodeCall = (methodName, params = []) => contractInterface.encodeFunctionData(methodName, params);
+  /**
+   * Encodes a contract call.
+   * @param {string} methodName - The name of the method to call
+   * @param {Array} params - The parameters for the method call
+   * @returns {string} The encoded call data
+   */
+  encodeCall(methodName, params = []) {
+    return this.contractInterface.encodeFunctionData(methodName, params);
+  }
 
-  const decodeCall = (methodName, data) => {
-    const { outputs } = contractInterface.getFunction(methodName);
-    const decoded = contractInterface.decodeFunctionResult(methodName, data);
+  /**
+   * Decodes a contract call.
+   * @param {string} methodName - The name of the method to decode
+   * @param {string} data - The encoded call data
+   * @returns {Object} The decoded call result
+   */
+  decodeCall(methodName, data) {
+    const { outputs } = this.contractInterface.getFunction(methodName);
+    const decoded = this.contractInterface.decodeFunctionResult(methodName, data);
     return Array.isArray(decoded) && outputs && outputs.length < 2 ? decoded[0] : decoded;
-  };
+  }
 
-  const call = async (methodName, params = [], txData = {}) => {
+  /**
+   * Makes a call to a contract method.
+   * @param {string} methodName - The name of the method to call
+   * @param {Array} params - The parameters for the method call
+   * @param {Object} txData - Additional transaction data
+   * @returns {Promise<*>} A promise that resolves to the call result
+   * @throws {Error} If nod3 is not set, address is not defined, or params is not an array
+   */
+  async call(methodName, params = [], txData = {}) {
     try {
-      if (!nod3) throw new Error(`Set nod3 instance before call`);
-      if (!address) throw new Error(`The contract address is not defined`);
+      if (!this.nod3) throw new Error(`Set nod3 instance before call`);
+      if (!this.address) throw new Error(`The contract address is not defined`);
       if (!Array.isArray(params)) throw new Error(`Params must be an array`);
-      const data = encodeCall(methodName, params);
-      const to = address;
+
+      const data = this.encodeCall(methodName, params);
+      const to = this.address;
       const tx = Object.assign(txData, { to, data });
-      const result = await nod3.eth.call(tx);
-      return decodeCall(methodName, result);
+      const result = await this.nod3.eth.call(tx);
+      return this.decodeCall(methodName, result);
     } catch (err) {
       return Promise.reject(err);
     }
-  };
-  return Object.freeze({ at, setNod3, setAbi, getAbi, encodeCall, decodeCall, call });
-}
+  }
+}exports.default = Contract;
 //# sourceMappingURL=Contract.js.map
