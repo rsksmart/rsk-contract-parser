@@ -15,7 +15,8 @@ var _utils = require("./utils");
 
 
 
-var _addresses2 = require("@rsksmart/rsk-utils/dist/addresses");function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
+var _addresses2 = require("@rsksmart/rsk-utils/dist/addresses");
+var _ERC = _interopRequireDefault(require("./jsonAbis/ERC165.json"));function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 
 /**
  * Maps interfaces to ERCs.
@@ -251,6 +252,7 @@ class ContractParser {
       const res = await contract.call(method, params, options);
       return res;
     } catch (err) {
+      console.warn(`[${contract.address}] Error calling ${method}: ${err}`);
       return null;
     }
   }
@@ -377,6 +379,7 @@ class ContractParser {
     let isErc165 = false;
     //  skip non-erc165 contracts
     if ((0, _rskUtils.includesAll)(methods, ['supportsInterface(bytes4)'])) {
+      console.log('supports erc165 interface');
       isErc165 = await this.implementsErc165(contract);
     }
     let interfaces;
@@ -550,34 +553,55 @@ class ContractParser {
   }
 
   /**
-   * Checks if the contract supports a specific interface.
-   * @param {Object} contract - The contract object
-   * @param {string} interfaceId - The ID of the interface to check
-   * @returns {Promise<boolean>} True if the contract supports the interface, false otherwise
-   */
-  async supportsInterface(contract, interfaceId) {
-    // fixed gas to prevent infinite loops
-    let options = { gas: '0x7530' };
-    let res = await this.call('supportsInterface', contract, [interfaceId], options);
-    return res;
-  }
-
-  /**
    * Checks if the contract implements the ERC165 standard.
    * @param {Object} contract - The contract object
    * @returns {Promise<boolean>} True if the contract implements the ERC165 standard, false otherwise
+   * @see https://eips.ethereum.org/EIPS/eip-165
    */
   async implementsErc165(contract) {
     try {
-      let first = await this.supportsInterface(contract, _interfacesIds.default.ERC165.id);
-      if (first === true) {
-        let second = await this.supportsInterface(contract, '0xffffffff');
-        return !(second === true || second === null);
+      const firstCallResult = await this.supportsInterface(contract, _interfacesIds.default.ERC165.id);
+      if (firstCallResult) {
+        const secondCallResult = await this.supportsInterface(contract, '0xffffffff');
+        const isErc165 = secondCallResult === false || secondCallResult === null;
+
+        return isErc165;
       }
       return false;
     } catch (err) {
       return Promise.reject(err);
     }
+  }
+
+  /**
+   * Checks if the contract supports a specific interface.
+   * @param {Object} contract - The contract object
+   * @param {string} interfaceId - The ID of the interface to check
+   * @returns {Promise<boolean>} True if the contract supports the interface, false otherwise
+   * @see https://eips.ethereum.org/EIPS/eip-165
+   */
+  async supportsInterface(contract, interfaceId) {
+    let res = false;
+    // Compiled ABI can contain multiple matching functions, making ethers throw an error. Use only ERC165 abi for this call
+    const tempAbi = contract.getAbi();
+    contract.setAbi(_ERC.default);
+
+    try {
+      res = await this.call(
+        'supportsInterface',
+        contract,
+        [interfaceId],
+        { gas: '0x7530' } // 30000
+      );
+      console.dir({ res }, { depth: null });
+      return res;
+    } catch (err) {
+      console.warn(`[${contract.address}] Error calling supportsInterface for interfaceId ${interfaceId}: ${err}`);
+    }
+
+    // Go back to previous abi
+    contract.setAbi(tempAbi);
+    return res;
   }
 }exports.ContractParser = ContractParser;var _default = exports.default =
 

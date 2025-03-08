@@ -16,6 +16,7 @@ import {
   notZero
 } from './utils'
 import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
+import ERC165_ABI from './jsonAbis/ERC165.json'
 
 /**
  * Maps interfaces to ERCs.
@@ -251,6 +252,7 @@ export class ContractParser {
       const res = await contract.call(method, params, options)
       return res
     } catch (err) {
+      this.log.trace(`[${contract.address}] Error calling ${method}: ${err}`)
       return null
     }
   }
@@ -554,11 +556,29 @@ export class ContractParser {
    * @param {Object} contract - The contract object
    * @param {string} interfaceId - The ID of the interface to check
    * @returns {Promise<boolean>} True if the contract supports the interface, false otherwise
+   * @see https://eips.ethereum.org/EIPS/eip-165
    */
   async supportsInterface (contract, interfaceId) {
-    // fixed gas to prevent infinite loops
-    let options = { gas: '0x7530' }
-    let res = await this.call('supportsInterface', contract, [interfaceId], options)
+    let res = false
+    // Compiled ABI can contain multiple matching functions, making ethers throw an error. Use only ERC165 abi for this call
+    const tempAbi = contract.getAbi()
+    contract.setAbi(ERC165_ABI)
+
+    try {
+      res = await this.call(
+        'supportsInterface',
+        contract,
+        [interfaceId],
+        { gas: '0x7530' } // 30000
+      )
+      console.dir({ res }, { depth: null })
+      return res
+    } catch (err) {
+      console.warn(`[${contract.address}] Error calling supportsInterface for interfaceId ${interfaceId}: ${err}`)
+    }
+
+    // Go back to previous abi
+    contract.setAbi(tempAbi)
     return res
   }
 
@@ -566,13 +586,16 @@ export class ContractParser {
    * Checks if the contract implements the ERC165 standard.
    * @param {Object} contract - The contract object
    * @returns {Promise<boolean>} True if the contract implements the ERC165 standard, false otherwise
+   * @see https://eips.ethereum.org/EIPS/eip-165
    */
   async implementsErc165 (contract) {
     try {
-      let first = await this.supportsInterface(contract, interfacesIds.ERC165.id)
-      if (first === true) {
-        let second = await this.supportsInterface(contract, '0xffffffff')
-        return !(second === true || second === null)
+      const firstCallResult = await this.supportsInterface(contract, interfacesIds.ERC165.id)
+      if (firstCallResult) {
+        const secondCallResult = await this.supportsInterface(contract, '0xffffffff')
+        const isErc165 = secondCallResult === false || secondCallResult === null
+
+        return isErc165
       }
       return false
     } catch (err) {

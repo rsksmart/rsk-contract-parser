@@ -2,7 +2,8 @@ import { Interface } from '@ethersproject/abi'
 
 export default function Contract (abi, { address, nod3 } = {}) {
   if (!abi || typeof abi !== 'object') throw new Error('Invalid abi')
-  const contractInterface = new Interface(abi)
+  
+  let contractInterface = new Interface(abi)
 
   const at = newAddress => {
     address = newAddress
@@ -10,6 +11,13 @@ export default function Contract (abi, { address, nod3 } = {}) {
 
   const setNod3 = nod3Instance => {
     nod3 = nod3Instance
+  }
+
+  const getAbi = () => abi
+
+  const setAbi = (newAbi) => {
+    abi = newAbi
+    contractInterface = new Interface(abi)
   }
 
   // const isEvent = name => abiFind('event', name)
@@ -36,5 +44,5 @@ export default function Contract (abi, { address, nod3 } = {}) {
       return Promise.reject(err)
     }
   }
-  return Object.freeze({ at, setNod3, encodeCall, decodeCall, call })
+  return Object.freeze({ at, setNod3, setAbi, getAbi, encodeCall, decodeCall, call })
 }

@@ -52,8 +52,7 @@ describe('# Interfaces detection', function () {
     this.timeout(60000)
     it(`${address}: ${addresses[address]}`, async function () {
       let contract = parser.makeContract(address)
-      const code = await nod3.eth.getCode(address)
-      let info = await parser.getContractInfo(code, contract)
+      let info = await parser.getContractMethodsAndERCInterfaces(address, contract)
       let { interfaces } = info
       assert.includeMembers(interfaces, addresses[address])
     })
