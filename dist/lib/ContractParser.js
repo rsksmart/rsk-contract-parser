@@ -19,27 +19,6 @@ var _addresses2 = require("@rsksmart/rsk-utils/dist/addresses");
 var _ERC = _interopRequireDefault(require("./jsonAbis/ERC165.json"));function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 
 /**
- * Maps interfaces to ERCs.
- * @param {Object} interfaces - The interfaces to map
- * @returns {Array} The mapped interfaces
- */
-function mapInterfacesToERCs(interfaces) {
-  return Object.keys(interfaces).
-  filter((k) => interfaces[k] === true).
-  map((t) => _types.contractsInterfaces[t] || t);
-}
-
-/**
- * Checks if a contract bytecode contains a method selector.
- * @param {string} contractByteCode - The bytecode of the contract
- * @param {string} selector - The selector to check for
- * @returns {boolean} True if the selector is found in the contract bytecode, false otherwise
- */
-function hasMethodSelector(contractByteCode, selector) {
-  return selector && contractByteCode && contractByteCode.includes(selector);
-}
-
-/**
  * Constants for proxy types.
  * @type {Object}
  * @property {Object} EIP1967 - Constants for EIP-1967 proxy types
@@ -132,7 +111,6 @@ class ContractParser {
   /**
    * Retrieves the methods and their selectors from the ABI.
    * @param {Array} abi - The Application Binary Interface (ABI) to use for decoding
-   * @returns {Object} An object containing method names as keys and their selectors as values
    */
   getMethodsSelectors(abi) {
     let selectors = {};
@@ -148,7 +126,6 @@ class ContractParser {
   /**
    * Retrieves the methods and their signatures from the ABI.
    * @param {Array} fromAbi - The ABI to use for decoding
-   * @returns {Object} An object containing method names as keys and their signatures as values
    */
   getAbiMethods(fromAbi) {
     let methods = {};
@@ -279,21 +256,40 @@ class ContractParser {
   }
 
   /**
+   * Maps interfaces to ERCs.
+   * @param {Object} interfaces - The interfaces to map
+   * @returns {Array} The mapped interfaces
+   */
+  mapInterfacesToERCs(interfaces) {
+    return Object.keys(interfaces).
+    filter((k) => interfaces[k] === true).
+    map((t) => _types.contractsInterfaces[t] || t);
+  }
+
+  /**
+   * Checks if a contract bytecode contains a method selector.
+   * @param {string} contractByteCode - The bytecode of the contract
+   * @param {string} selector - The selector to check for
+   * @returns {boolean} True if the selector is found in the contract bytecode, false otherwise
+   */
+  hasMethodSelector(contractByteCode, selector) {
+    return selector && contractByteCode && contractByteCode.includes(selector);
+  }
+
+  /**
    * Retrieves the methods from the contract bytecode.
    * @param {string} contractByteCode - The contract bytecode. This also happens to be the txInputData on contract creation txs
-   * @returns {Object} An object containing method names as keys and their selectors as values
    */
   getMethodsFromContractByteCode(contractByteCode) {
     let methods = this.getMethodsSelectors();
     return Object.keys(methods).
-    filter((method) => hasMethodSelector(contractByteCode, methods[method]) === true);
+    filter((method) => this.hasMethodSelector(contractByteCode, methods[method]) === true);
   }
 
   /**
    * Retrieves the contract information from the contract bytecode.
    * @param {string} contractByteCode - The contract bytecode. This also happens to be the txInputData on contract creation txs
    * @param {Object} contract - The contract object
-   * @returns {Object} An object containing the methods and interfaces of the contract
    */
   async getContractMethodsAndERCInterfaces(address, contract) {
     const contractByteCode = await this.getContractCodeFromNode(address);
@@ -301,14 +297,13 @@ class ContractParser {
 
     return {
       methods,
-      interfaces: mapInterfacesToERCs(interfaces)
+      interfaces: this.mapInterfacesToERCs(interfaces)
     };
   }
 
   /**
    * Retrieves the proxy details of a contract
    * @param {string} contractAddress - The address of the contract
-   * @returns {Promise<Object>} The proxy details
    */
   async getProxyDetails(contractAddress) {
     let proxyDetails = {
@@ -371,8 +366,7 @@ class ContractParser {
   /**
    * Retrieves the implemented interfaces of the contract
    * @param {string} contractByteCode - The contract bytecode. This also happens to be the txInputData on contract creation txs
-   * @param {Object} contract - The contract object
-   * @returns {Object} An object containing the methods and interfaces of the contract
+   * @param {Contract} contract - The contract object
    */
   async getContractImplementedInterfaces(contractByteCode, contract) {
     let methods = this.getMethodsFromContractByteCode(contractByteCode);
@@ -394,7 +388,6 @@ class ContractParser {
   /**
    * Checks if the contract is a proxy contract using the ERC1967 standard.
    * @param {string} contractAddress - The address of the contract
-   * @returns {Object} An object containing the proxy details
    * @see https://eips.ethereum.org/EIPS/eip-1967
    */
   async isERC1967Proxy(contractAddress) {
@@ -538,17 +531,18 @@ class ContractParser {
   /**
    * Retrieves the interfaces of the contract based on the methods.
    * @param {Array} methods - The methods of the contract
-   * @returns {Object} An object containing the interfaces of the contract
    */
   getInterfacesByMethods(methods) {
-    return Object.keys(_interfacesIds.default).
-    map((i) => {
-      return [i, (0, _rskUtils.includesAll)(methods, _interfacesIds.default[i].methods)];
-    }).
-    reduce((obj, value) => {
+    const interfaces = Object.keys(_interfacesIds.default);
+
+    const mappedInterfaces = interfaces.map((i) => [i, (0, _rskUtils.includesAll)(methods, _interfacesIds.default[i].methods)]);
+
+    const reducedInterfaces = mappedInterfaces.reduce((obj, value) => {
       obj[value[0]] = value[1];
       return obj;
     }, {});
+
+    return reducedInterfaces;
   }
 
   /**
@@ -571,10 +565,9 @@ class ContractParser {
         [interfaceId],
         { gas: '0x7530' } // 30000
       );
-      console.dir({ res }, { depth: null });
       return res;
     } catch (err) {
-      console.warn(`[Contract: ${contract.getAddress()}] Error calling supportsInterface for interfaceId ${interfaceId}: ${err}`);
+      this.log.warn(`[Contract: ${contract.getAddress()}] Error calling supportsInterface for interfaceId ${interfaceId}: ${err}`);
     }
 
     // Go back to previous abi
