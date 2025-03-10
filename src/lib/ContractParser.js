@@ -72,6 +72,27 @@ export class ContractParser {
   }
 
   /**
+   * Retrieves the methods from the ABI.
+   * @param {Array} abi - The ABI to use for decoding
+   * @param {boolean} [addAbiSignatureData=false] - Whether to add the ABI signature data to the methods (default: false)
+   * @returns {Array} The methods
+   */
+  static getMethodsFromAbi(abi, addAbiSignatureData = false) {
+    const methods = abi
+      .filter(fragment => fragment.type === 'function')
+
+    if (addAbiSignatureData) {
+      return methods.map(method => {
+        const sig = method[ABI_SIGNATURE] || abiSignatureData(method)
+        sig.name = method.name
+        return sig
+      })
+    }
+
+    return methods
+  }
+
+  /**
    * Sets the Nod3 instance for making blockchain calls.
    * @param {Object} nod3 - Nod3 instance for making blockchain calls
    */
@@ -89,6 +110,14 @@ export class ContractParser {
     if (nativeContracts) {
       return nativeContracts.getNativeContractAddress(name)
     }
+  }
+
+  /**
+   * Retrieves the current ABI being used by the ContractParser instance.
+   * @returns {Array} The ABI
+   */
+  getAbi () {
+    return this.abi
   }
 
   /**
@@ -112,9 +141,10 @@ export class ContractParser {
    * Retrieves the methods and their selectors from the ABI.
    * @param {Array} abi - The Application Binary Interface (ABI) to use for decoding
    */
-  getMethodsSelectors (abi) {
+  getMethodsSelectors () {
     let selectors = {}
-    let methods = this.getAbiMethods(abi || this.abi)
+    let methods = this.getAbiMethods()
+
     for (let m in methods) {
       let method = methods[m]
       let signature = method.signature || soliditySignature(m)
@@ -127,10 +157,9 @@ export class ContractParser {
    * Retrieves the methods and their signatures from the ABI.
    * @param {Array} fromAbi - The ABI to use for decoding
    */
-  getAbiMethods (fromAbi) {
+  getAbiMethods () {
     let methods = {}
-    const abi = fromAbi || this.abi
-    abi.filter(def => def.type === 'function')
+    this.abi.filter(def => def.type === 'function')
       .map(m => {
         let sig = m[ABI_SIGNATURE] || abiSignatureData(m)
         sig.name = m.name
@@ -190,9 +219,8 @@ export class ContractParser {
    * @param {Array} [abi] - The Application Binary Interface (ABI) to use for decoding
    * @returns {Array} An array of decoded events
    */
-  decodeLogs (logs, abi) {
-    abi = abi || this.abi
-    const eventDecoder = EventDecoder(abi, this.log)
+  decodeLogs (logs) {
+    const eventDecoder = EventDecoder(this.abi, this.log)
     if (!this.nativeContracts || !this.nativeContractsEvents) {
       throw new Error(`Native contracts decoder is missing, check the value of netId:${this.netId}`)
     }
@@ -208,13 +236,11 @@ export class ContractParser {
   /**
    * Creates a contract instance, useful for calling methods on the contract
    * @param {string} address - The address of the contract
-   * @param {Array} [abi] - The Application Binary Interface (ABI) to use for the contract
    * @returns {Contract} A contract instance
    */
-  makeContract (address, abi) {
-    abi = abi || this.abi
+  makeContract (address) {
     let { nod3 } = this
-    return new Contract(abi, { address, nod3 })
+    return new Contract(this.abi, { address, nod3 })
   }
 
   /**
