@@ -12,9 +12,27 @@ export const soliditySignature = name => keccak256(name)
 
 export const soliditySelector = signature => signature.slice(0, 8)
 
+export const processInputType = input => {
+  if (input.type !== 'tuple' && !input.type.startsWith('tuple[')) {
+    return input.type
+  }
+  
+  // Process tuple components
+  const componentsTypes = input.components.map(component => processInputType(component))
+  const tupleRepresentation = `(${componentsTypes.join(',')})`
+  
+  // If it's an array of tuples, append the array brackets
+  if (input.type.startsWith('tuple[')) {
+    const arrayBrackets = input.type.substring(5) // extract the array part: [] for dynamic array, '[number]' for fixed array
+    return `${tupleRepresentation}${arrayBrackets}`
+  }
+  
+  return tupleRepresentation
+}
+
 export const solidityName = abi => {
   let { name, inputs } = abi
-  inputs = (inputs) ? inputs.map(i => i.type) : []
+  inputs = (inputs) ? inputs.map(i => processInputType(i)) : []
   return (name) ? `${name}(${inputs.join(',')})` : null
 }
 
