@@ -17,7 +17,8 @@ var _utils = require("./utils");
 
 var _addresses2 = require("@rsksmart/rsk-utils/dist/addresses");
 
-var _abi = require("@ethersproject/abi");function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };} // import ERC165_ABI from './jsonAbis/ERC165.json'
+var _abi = require("@ethersproject/abi");
+var _Nod = require("@rsksmart/nod3/dist/classes/Nod3");function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };} // import ERC165_ABI from './jsonAbis/ERC165.json'
 
 /**
  * Constants for proxy types.
@@ -55,7 +56,7 @@ class ContractParser {
    * @param {Object} [options.initConfig] - Initial configuration object
    * @param {Object} [options.initConfig.net] - Network configuration information
    * @param {string|number} [options.initConfig.net.id] - Network ID used to determine RSK/Bitcoin network
-   * @param {Object} [options.nod3] - Nod3 instance for making blockchain calls
+   * @param {Nod3} [options.nod3] - Nod3 instance for making blockchain calls
    * @param {number} [options.txBlockNumber] - Transaction's block number for accurate event decoding
    */
   constructor({ abi, log, initConfig, nod3, txBlockNumber } = {}) {
@@ -95,7 +96,7 @@ class ContractParser {
 
   /**
    * Sets the Nod3 instance for making blockchain calls.
-   * @param {Object} nod3 - Nod3 instance for making blockchain calls
+   * @param {Nod3} nod3 - Nod3 instance for making blockchain calls
    */
   setNod3(nod3) {
     this.nod3 = nod3;
@@ -123,7 +124,7 @@ class ContractParser {
 
   /**
    * Sets the ABI for the ContractParser instance.
-   * @param {Array} abi - The Application Binary Interface (ABI) to use for decoding
+   * @param {Array} abi - The Application Binary Interface (ABI)
    */
   setAbi(abi) {
     try {
@@ -140,7 +141,6 @@ class ContractParser {
 
   /**
    * Retrieves the methods and their selectors from the ABI.
-   * @param {Array} abi - The Application Binary Interface (ABI) to use for decoding
    */
   getMethodsSelectors() {
     let selectors = {};
@@ -156,7 +156,6 @@ class ContractParser {
 
   /**
    * Retrieves the methods and their signatures from the ABI.
-   * @param {Array} fromAbi - The ABI to use for decoding
    */
   getAbiMethods() {
     let methods = {};
@@ -172,7 +171,7 @@ class ContractParser {
   /**
    * Parses transaction logs and returns decoded events.
    * @param {Array} logs - The transaction logs to parse
-   * @param {Array} [abi] - The Application Binary Interface (ABI) to use for decoding
+   * @param {Array} [abi] - The Application Binary Interface (ABI)
    * @returns {Array} An array of decoded events
    */
   parseTxLogs(logs, abi) {
@@ -217,7 +216,7 @@ class ContractParser {
   /**
    * Decodes transaction logs and returns decoded events.
    * @param {Array} logs - The transaction logs to decode
-   * @param {Array} [abi] - The Application Binary Interface (ABI) to use for decoding
+   * @param {Array} [abi] - The Application Binary Interface (ABI)
    * @returns {Array} An array of decoded events
    */
   decodeLogs(logs) {
@@ -306,7 +305,11 @@ class ContractParser {
 
   /**
    * Retrieves the methods from the contract bytecode.
-   * @param {string} contractByteCode - The contract bytecode. This also happens to be the txInputData on contract creation txs
+   * 
+   * This bytecode is also the txInputData on contract creation transactions. 
+   * Note that using the default ABI for methods validation may not be 100% precise. Therefore, it is recommended to set a verified contract ABI and use the `getAbiMethods` method.
+   * 
+   * @param {string} contractByteCode - The contract bytecode to analyze.
    */
   getMethodsFromContractByteCode(contractByteCode) {
     let methods = this.getMethodsSelectors();
@@ -315,9 +318,8 @@ class ContractParser {
   }
 
   /**
-   * Retrieves the contract information from the contract bytecode.
-   * @param {string} contractByteCode - The contract bytecode. This also happens to be the txInputData on contract creation txs
-   * @param {Object} contract - The contract object
+   * Retrieves the contract methods and ERC interfaces.
+   * @param {string} address - The contract address
    */
   async getContractMethodsAndERCInterfaces(address) {
     const contractByteCode = await this.getContractCodeFromNode(address);
