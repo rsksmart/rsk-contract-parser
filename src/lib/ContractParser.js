@@ -16,7 +16,8 @@ import {
   notZero
 } from './utils'
 import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
-import ERC165_ABI from './jsonAbis/ERC165.json'
+// import ERC165_ABI from './jsonAbis/ERC165.json'
+import { FunctionFragment } from '@ethersproject/abi'
 
 /**
  * Constants for proxy types.
@@ -245,7 +246,7 @@ export class ContractParser {
 
   /**
    * Calls a method on a contract
-   * @param {string} method - The method to call
+   * @param {FunctionFragment | string} method - The method to call
    * @param {Contract} contract - The contract object
    * @param {Array} [params] - The parameters to pass to the method
    * @param {Object} [options] - The options for the call
@@ -255,7 +256,8 @@ export class ContractParser {
       const res = await contract.call(method, params, options)
       return res
     } catch (err) {
-      this.log.trace(`[Contract: ${contract.getAddress()}] Error calling ${method}: ${err}`)
+      this.log.trace(`Error calling contract ${contract.getAddress()}: ${err}`)
+      this.log.trace(err)
       return null
     }
   }
@@ -272,7 +274,7 @@ export class ContractParser {
       methods.map(m =>
         this.call(m, contract)
           .then(res => res)
-          .catch(err => this.log.debug(`[Contract: ${contract.getAddress()}] Error executing ${m}  Error: ${err}`)))
+          .catch(err => this.log.trace(`[Contract: ${contract.getAddress()}] Error executing ${m}  Error: ${err}`)))
     )
     return result.reduce((v, a, i) => {
       let name = methods[i]
@@ -317,14 +319,12 @@ export class ContractParser {
    * @param {string} contractByteCode - The contract bytecode. This also happens to be the txInputData on contract creation txs
    * @param {Object} contract - The contract object
    */
-  async getContractMethodsAndERCInterfaces (address, contract) {
+  async getContractMethodsAndERCInterfaces (address) {
     const contractByteCode = await this.getContractCodeFromNode(address)
-    const { interfaces, methods } = await this.getContractImplementedInterfaces(contractByteCode, contract)
-
-    return {
-      methods,
-      interfaces: this.mapInterfacesToERCs(interfaces)
-    }
+    const methods = this.getMethodsFromContractByteCode(contractByteCode)
+    const interfaces = this.getInterfacesByMethods(methods)
+  
+    return { methods, interfaces }
   }
 
   /**
@@ -387,28 +387,6 @@ export class ContractParser {
     }
 
     return proxyDetails
-  }
-
-  /**
-   * Retrieves the implemented interfaces of the contract
-   * @param {string} contractByteCode - The contract bytecode. This also happens to be the txInputData on contract creation txs
-   * @param {Contract} contract - The contract object
-   */
-  async getContractImplementedInterfaces (contractByteCode, contract) {
-    let methods = this.getMethodsFromContractByteCode(contractByteCode)
-    let isErc165 = false
-    //  skip non-erc165 contracts
-    if (includesAll(methods, ['supportsInterface(bytes4)'])) {
-      isErc165 = await this.implementsErc165(contract)
-    }
-    let interfaces
-    if (isErc165) {
-      interfaces = await this.getInterfacesERC165(contract)
-    } else {
-      interfaces = this.getInterfacesByMethods(methods)
-    }
-
-    return { methods, interfaces }
   }
 
   /**
@@ -541,20 +519,6 @@ export class ContractParser {
   }
 
   /**
-   * Retrieves the interfaces of the contract based on the ERC165 standard.
-   * @param {Object} contract - The contract object
-   * @returns {Promise<Object>} An object containing the interfaces of the contract
-   */
-  async getInterfacesERC165 (contract) {
-    let ifaces = {}
-    let keys = Object.keys(interfacesIds)
-    for (let i of keys) {
-      ifaces[i] = await this.supportsInterface(contract, interfacesIds[i].id)
-    }
-    return ifaces
-  }
-
-  /**
    * Retrieves the interfaces of the contract based on the methods.
    * @param {Array} methods - The methods of the contract
    */
@@ -567,60 +531,72 @@ export class ContractParser {
       obj[value[0]] = value[1];
       return obj;
     }, {});
-    
-    return reducedInterfaces;
+
+    return this.mapInterfacesToERCs(reducedInterfaces);
   }
 
-  /**
-   * Checks if the contract supports a specific interface.
-   * @param {Contract} contract - The contract object
-   * @param {string} interfaceId - The ID of the interface to check
-   * @returns {Promise<boolean>} True if the contract supports the interface, false otherwise
-   * @see https://eips.ethereum.org/EIPS/eip-165
-   */
-  async supportsInterface (contract, interfaceId) {
-    let res = false
-    // Compiled ABI can contain multiple matching functions, making ethers throw an error. Use only ERC165 abi for this call
-    const tempAbi = contract.getAbi()
-    contract.setAbi(ERC165_ABI)
+  // /**
+  //  * Retrieves the interfaces of the contract based on the ERC165 standard.
+  //  * @param {Object} contract - The contract object
+  //  * @returns {Promise<Object>} An object containing the interfaces of the contract
+  //  */
+  // async getInterfacesERC165 (contract) {
+  //   let ifaces = {}
+  //   let keys = Object.keys(interfacesIds)
+  //   for (let i of keys) {
+  //     ifaces[i] = await this.supportsInterface(contract, interfacesIds[i].id)
+  //   }
+  //   return ifaces
+  // }
 
-    try {
-      res = await this.call(
-        'supportsInterface',
-        contract,
-        [interfaceId],
-        { gas: '0x7530' } // 30000
-      )
-      return res
-    } catch (err) {
-      this.log.warn(`[Contract: ${contract.getAddress()}] Error calling supportsInterface for interfaceId ${interfaceId}: ${err}`)
-    }
+  // /**
+  //  * Checks if the contract supports a specific interface.
+  //  * @param {Contract} contract - The contract object
+  //  * @param {string} interfaceId - The ID of the interface to check
+  //  * @returns {Promise<boolean>} True if the contract supports the interface, false otherwise
+  //  * @see https://eips.ethereum.org/EIPS/eip-165
+  //  */
+  // async supportsInterface (contract, interfaceId) {
+  //   let res = false
 
-    // Go back to previous abi
-    contract.setAbi(tempAbi)
-    return res
-  }
+  //   try {
+  //     const ERC165_GAS_LIMIT = '0x7530' // 30000
+  //     const fragment = FunctionFragment.from(ERC165_ABI.find(f => f.name === 'supportsInterface'))
+  //     res = await contract.call(fragment, [interfaceId], { gas: ERC165_GAS_LIMIT })
+  //   } catch (err) {
+  //     this.log.warn(`[Contract: ${contract.getAddress()}] Error calling supportsInterface for interfaceId ${interfaceId}: ${err}`)
+  //   }
 
-  /**
-   * Checks if the contract implements the ERC165 standard.
-   * @param {Object} contract - The contract object
-   * @returns {Promise<boolean>} True if the contract implements the ERC165 standard, false otherwise
-   * @see https://eips.ethereum.org/EIPS/eip-165
-   */
-  async implementsErc165 (contract) {
-    try {
-      const firstCallResult = await this.supportsInterface(contract, interfacesIds.ERC165.id)
-      if (firstCallResult) {
-        const secondCallResult = await this.supportsInterface(contract, '0xffffffff')
-        const isErc165 = secondCallResult === false || secondCallResult === null
+  //   // Response values:
+  //   // false: interface not supported
+  //   // null: erc165 not implemented
+  //   if (res === false || res === null) { 
+  //     return false // normalize response
+  //   } else {
+  //     return true
+  //   }
+  // }
 
-        return isErc165
-      }
-      return false
-    } catch (err) {
-      return Promise.reject(err)
-    }
-  }
+  // /**
+  //  * Checks if the contract implements the ERC165 standard.
+  //  * @param {Object} contract - The contract object
+  //  * @returns {Promise<boolean>} True if the contract implements the ERC165 standard, false otherwise
+  //  * @see https://eips.ethereum.org/EIPS/eip-165
+  //  */
+  // async implementsErc165 (contract) {
+  //   try {
+  //     const firstCallResult = await this.supportsInterface(contract, interfacesIds.ERC165.id)
+  //     if (firstCallResult) {
+  //       const secondCallResult = await this.supportsInterface(contract, '0xffffffff')
+  //       const isErc165 = secondCallResult === false || secondCallResult === null
+
+  //       return isErc165
+  //     }
+  //     return false
+  //   } catch (err) {
+  //     return Promise.reject(err)
+  //   }
+  // }
 }
 
 export default ContractParser

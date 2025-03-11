@@ -64,45 +64,51 @@ class Contract {
 
   /**
    * Encodes a contract call.
-   * @param {string} methodName - The name of the method to call
+   * @param {FunctionFragment | string} method - The method to call. Can be the method name or a FunctionFragment for more precise method selection
    * @param {Array} params - The parameters for the method call
    * @returns {string} The encoded call data
    */
-  encodeCall(methodName, params = []) {
-    return this.contractInterface.encodeFunctionData(methodName, params);
+  encodeCall(method, params = []) {
+    return this.contractInterface.encodeFunctionData(method, params);
   }
 
   /**
    * Decodes a contract call.
-   * @param {string} methodName - The name of the method to decode
+   * @param {FunctionFragment | string} method - The method to decode. Can be the method name or a FunctionFragment for more precise method selection
    * @param {string} data - The encoded call data
    * @returns {Object} The decoded call result
    */
-  decodeCall(methodName, data) {
-    const { outputs } = this.contractInterface.getFunction(methodName);
-    const decoded = this.contractInterface.decodeFunctionResult(methodName, data);
-    return Array.isArray(decoded) && outputs && outputs.length < 2 ? decoded[0] : decoded;
+  decodeCall(method, data) {
+    if (method instanceof _abi.FunctionFragment) {
+      const { outputs } = method;
+      const decoded = this.contractInterface.decodeFunctionResult(method, data);
+      return Array.isArray(decoded) && outputs && outputs.length < 2 ? decoded[0] : decoded;
+    } else {
+      const { outputs } = this.contractInterface.getFunction(method);
+      const decoded = this.contractInterface.decodeFunctionResult(method, data);
+      return Array.isArray(decoded) && outputs && outputs.length < 2 ? decoded[0] : decoded;
+    }
   }
 
   /**
    * Makes a call to a contract method.
-   * @param {string} methodName - The name of the method to call
+   * @param {FunctionFragment | string} methodName - The method to call. Can be the method name or a FunctionFragment for more precise method selection
    * @param {Array} params - The parameters for the method call
    * @param {Object} txData - Additional transaction data
    * @returns {Promise<*>} A promise that resolves to the call result
    * @throws {Error} If nod3 is not set, address is not defined, or params is not an array
    */
-  async call(methodName, params = [], txData = {}) {
+  async call(method, params = [], txData = {}) {
     try {
       if (!this.nod3) throw new Error(`Set nod3 instance before call`);
       if (!this.address) throw new Error(`The contract address is not defined`);
       if (!Array.isArray(params)) throw new Error(`Params must be an array`);
 
-      const data = this.encodeCall(methodName, params);
+      const data = this.encodeCall(method, params);
       const to = this.address;
       const tx = Object.assign(txData, { to, data });
       const result = await this.nod3.eth.call(tx);
-      return this.decodeCall(methodName, result);
+      return this.decodeCall(method, result);
     } catch (err) {
       return Promise.reject(err);
     }
