@@ -466,10 +466,13 @@ export class ContractParser {
     return result
   }
 
-  // Open Zeppelin Unstructured Storage Pattern (before EIP-1967)
-  // Article: https://blog.openzeppelin.com/proxy-patterns
-  // Repository: https://github.com/OpenZeppelin/openzeppelin-labs/tree/master/upgradeability_using_unstructured_storage
-  // Contract: https://github.com/OpenZeppelin/openzeppelin-labs/blob/master/upgradeability_using_unstructured_storage/contracts/UpgradeabilityProxy.sol
+  /**
+   * Checks if the contract is a proxy contract using the Open Zeppelin Unstructured Storage Pattern.
+   * @param {string} contractAddress - The address of the contract
+   * @see https://blog.openzeppelin.com/proxy-patterns
+   * @see https://github.com/OpenZeppelin/openzeppelin-labs/tree/master/upgradeability_using_unstructured_storage
+   * @see https://github.com/OpenZeppelin/openzeppelin-labs/blob/master/upgradeability_using_unstructured_storage/contracts/UpgradeabilityProxy.sol
+   */
   async isOZUnstructuredStorageProxy (contractAddress) {
     const result = {
       address: contractAddress,
