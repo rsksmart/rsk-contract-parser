@@ -1,6 +1,8 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.interfacesIds = exports.default = void 0;var _utils = require("./utils");
 
 const erc20methods = [
+'name()',
+'symbol()',
 'decimals()',
 'totalSupply()',
 'balanceOf(address)',

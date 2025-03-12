@@ -1,6 +1,8 @@
 import { erc165IdFromMethods } from './utils'
 
 const erc20methods = [
+  'name()',
+  'symbol()',
   'decimals()',
   'totalSupply()',
   'balanceOf(address)',

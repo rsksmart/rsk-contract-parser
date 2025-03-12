@@ -31,3 +31,14 @@ export const tokensInterfaces = [
   ci.ERC677,
   ci.ERC721
 ]
+
+/**
+ * Constants for proxy types.
+ */
+export const PROXY_TYPES = {
+  ERC1967: {
+    Normal: 'ERC1967 Normal',
+    Beacon: 'ERC1967 Beacon'
+  },
+  OZUnstructuredStorage: 'Open Zeppelin Unstructured Storage (pre ERC1967)'
+}

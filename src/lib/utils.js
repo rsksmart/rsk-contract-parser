@@ -30,6 +30,19 @@ export const processInputType = input => {
   return tupleRepresentation
 }
 
+/**
+ * Returns the solidity name (signature) of the provided function fragment
+ * @param {Object} abi - The function fragment
+ * @returns {string} The solidity name of the function fragment
+ * @example
+ * solidityName({
+ *   name: 'balanceOf',
+ *   inputs: [{ type: 'address' }],
+ *   outputs: [{ type: 'uint256' }]
+ *   // ...other function fragment fields
+ * })
+ * // returns 'balanceOf(address)'
+ */
 export const solidityName = abi => {
   let { name, inputs } = abi
   inputs = (inputs) ? inputs.map(i => processInputType(i)) : []

@@ -6,6 +6,11 @@ var _Contract = _interopRequireDefault(require("./Contract"));
 var _EventDecoder = _interopRequireDefault(require("./EventDecoder"));
 var _Abi = _interopRequireDefault(require("./Abi"));
 var _types = require("./types");
+
+
+
+
+
 var _utils = require("./utils");
 
 
@@ -19,22 +24,6 @@ var _addresses2 = require("@rsksmart/rsk-utils/dist/addresses");
 
 var _abi = require("@ethersproject/abi");
 var _Nod = require("@rsksmart/nod3/dist/classes/Nod3");function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };} // import ERC165_ABI from './jsonAbis/ERC165.json'
-
-/**
- * Constants for proxy types.
- * @type {Object}
- * @property {Object} EIP1967 - Constants for EIP-1967 proxy types
- * @property {string} EIP1967.Normal - Normal EIP-1967 proxy type
- * @property {string} EIP1967.Beacon - Beacon EIP-1967 proxy type
- * @property {string} OZUnstructuredStorage - Open Zeppelin Unstructured Storage proxy type
- */
-const PROXY_TYPES = {
-  EIP1967: {
-    Normal: 'EIP-1967 Normal',
-    Beacon: 'EIP-1967 Beacon'
-  },
-  OZUnstructuredStorage: 'Open Zeppelin Unstructured Storage (pre EIP-1967)'
-};
 
 /**
  * The ContractParser class handles the analysis and interpretation of Ethereum smart contracts.
@@ -134,8 +123,7 @@ class ContractParser {
 
       this.abi = (0, _utils.setAbi)(abi);
     } catch (error) {
-      this.log.error('Error setting ABI. Switching back to default ABI.', error);
-      this.abi = (0, _utils.setAbi)(_Abi.default);
+      throw new Error(`Error setting ABI: ${error}`);
     }
   }
 
@@ -365,7 +353,7 @@ class ContractParser {
 
       return proxyDetails;
     } else {
-      // Open Zeppelin Unstructured Storage Pattern (before EIP-1967)
+      // Open Zeppelin Unstructured Storage Pattern (before ERC1967)
       const OZUnstructuredStorageProxyDetails = await this.isOZUnstructuredStorageProxy(contractAddress);
 
       if (OZUnstructuredStorageProxyDetails.isUpgradeable) {
@@ -412,12 +400,12 @@ class ContractParser {
     try {
       implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot);
     } catch (err) {
-      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.EIP1967.Normal}: ${err}`);
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${_types.PROXY_TYPES.ERC1967.Normal}: ${err}`);
       return result;
     }
 
     if ((0, _utils.notZero)(implementationSlotValue)) {
-      result.proxyType = PROXY_TYPES.EIP1967.Normal;
+      result.proxyType = _types.PROXY_TYPES.ERC1967.Normal;
       result.isUpgradeable = true;
       result.implementationAddress = (0, _utils.formatAddressFromSlot)(implementationSlotValue);
       return result;
@@ -430,12 +418,12 @@ class ContractParser {
     try {
       beaconSlotValue = await this.getStorageSlotValueFromNode(contractAddress, beaconSlot);
     } catch (err) {
-      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.EIP1967.Beacon}: ${err}`);
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${_types.PROXY_TYPES.ERC1967.Beacon}: ${err}`);
       return result;
     }
 
     if ((0, _utils.notZero)(beaconSlotValue)) {
-      result.proxyType = PROXY_TYPES.EIP1967.Beacon;
+      result.proxyType = _types.PROXY_TYPES.ERC1967.Beacon;
       result.isUpgradeable = true;
 
       try {
@@ -489,12 +477,12 @@ class ContractParser {
     try {
       implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot);
     } catch (err) {
-      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.OZUnstructuredStorage}: ${err}`);
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${_types.PROXY_TYPES.OZUnstructuredStorage}: ${err}`);
       return result;
     }
 
     if ((0, _utils.notZero)(implementationSlotValue)) {
-      result.proxyType = PROXY_TYPES.OZUnstructuredStorage;
+      result.proxyType = _types.PROXY_TYPES.OZUnstructuredStorage;
       result.isUpgradeable = true;
       result.implementationAddress = (0, _utils.formatAddressFromSlot)(implementationSlotValue);
 

@@ -5,7 +5,12 @@ import NativeContracts from './nativeContracts/NativeContracts'
 import Contract from './Contract'
 import EventDecoder from './EventDecoder'
 import defaultABI from './Abi'
-import { ABI_SIGNATURE, bitcoinRskNetWorks, contractsInterfaces } from './types'
+import {
+  ABI_SIGNATURE,
+  bitcoinRskNetWorks,
+  contractsInterfaces,
+  PROXY_TYPES
+} from './types'
 import {
   setAbi,
   removeAbiSignatureData,
@@ -19,22 +24,6 @@ import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
 // import ERC165_ABI from './jsonAbis/ERC165.json'
 import { FunctionFragment } from '@ethersproject/abi'
 import { Nod3 } from '@rsksmart/nod3/dist/classes/Nod3'
-
-/**
- * Constants for proxy types.
- * @type {Object}
- * @property {Object} EIP1967 - Constants for EIP-1967 proxy types
- * @property {string} EIP1967.Normal - Normal EIP-1967 proxy type
- * @property {string} EIP1967.Beacon - Beacon EIP-1967 proxy type
- * @property {string} OZUnstructuredStorage - Open Zeppelin Unstructured Storage proxy type
- */
-const PROXY_TYPES = {
-  EIP1967: {
-    Normal: 'EIP-1967 Normal',
-    Beacon: 'EIP-1967 Beacon'
-  },
-  OZUnstructuredStorage: 'Open Zeppelin Unstructured Storage (pre EIP-1967)'
-}
 
 /**
  * The ContractParser class handles the analysis and interpretation of Ethereum smart contracts.
@@ -134,8 +123,7 @@ export class ContractParser {
 
       this.abi = setAbi(abi)
     } catch (error) {
-      this.log.error('Error setting ABI. Switching back to default ABI.', error)
-      this.abi = setAbi(defaultABI)
+      throw new Error(`Error setting ABI: ${error}`)
     }
   }
 
@@ -365,7 +353,7 @@ export class ContractParser {
 
       return proxyDetails
     } else {
-      // Open Zeppelin Unstructured Storage Pattern (before EIP-1967)
+      // Open Zeppelin Unstructured Storage Pattern (before ERC1967)
       const OZUnstructuredStorageProxyDetails = await this.isOZUnstructuredStorageProxy(contractAddress)
 
       if (OZUnstructuredStorageProxyDetails.isUpgradeable) {
@@ -412,12 +400,12 @@ export class ContractParser {
     try {
       implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot)
     } catch (err) {
-      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.EIP1967.Normal}: ${err}`)
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.ERC1967.Normal}: ${err}`)
       return result
     }
 
     if (notZero(implementationSlotValue)) {
-      result.proxyType = PROXY_TYPES.EIP1967.Normal
+      result.proxyType = PROXY_TYPES.ERC1967.Normal
       result.isUpgradeable = true
       result.implementationAddress = formatAddressFromSlot(implementationSlotValue)
       return result
@@ -430,12 +418,12 @@ export class ContractParser {
     try {
       beaconSlotValue = await this.getStorageSlotValueFromNode(contractAddress, beaconSlot)
     } catch (err) {
-      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.EIP1967.Beacon}: ${err}`)
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.ERC1967.Beacon}: ${err}`)
       return result
     }
 
     if (notZero(beaconSlotValue)) {
-      result.proxyType = PROXY_TYPES.EIP1967.Beacon
+      result.proxyType = PROXY_TYPES.ERC1967.Beacon
       result.isUpgradeable = true
 
       try {
