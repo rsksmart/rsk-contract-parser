@@ -1,4 +1,3 @@
-
 import { isAddress } from '@rsksmart/rsk-utils'
 
 export const defaultNativeContracts = {
@@ -7,10 +6,10 @@ export const defaultNativeContracts = {
 }
 
 export const parseNativeContracts = nativeContracts => {
-  if (typeof nativeContracts !== 'object') throw new TypeError(`nativeContracts must be an object`)
-  if (Object.keys(nativeContracts) < 1) throw new Error(`Empty native contracts list`)
-  for (let name in nativeContracts) {
-    let address = nativeContracts[name]
+  if (typeof nativeContracts !== 'object') throw new TypeError('nativeContracts must be an object')
+  if (Object.keys(nativeContracts).length < 1) throw new Error('Empty native contracts list')
+  for (const name in nativeContracts) {
+    const address = nativeContracts[name]
     if (!isAddress(address)) throw new Error(`Address of ${name} is not an address`)
     nativeContracts[name] = address.toLowerCase()
   }

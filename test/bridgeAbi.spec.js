@@ -25,8 +25,8 @@ import { getBridgeAbi, RELEASES } from '../src/lib/nativeContracts/bridgeAbi'
 */
 
 describe('All abis must be in ascendant order', () => {
-  const mainnetAbis = RELEASES['mainnet']
-  const testnetAbis = RELEASES['testnet']
+  const mainnetAbis = RELEASES.mainnet
+  const testnetAbis = RELEASES.testnet
 
   for (let i = 1; i < mainnetAbis.length; i++) {
     it('Should current height be higher than the previous one', () => {

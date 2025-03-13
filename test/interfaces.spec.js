@@ -15,19 +15,19 @@ const parser = new ContractParser({ nod3 })
 
 describe('# Network', function () {
   it('should be connected to RSK testnet', async function () {
-    let net = await nod3.net.version()
+    const net = await nod3.net.version()
     console.log(net)
     assert.equal(net.id, '31')
   })
 })
 
 describe('# Interfaces detection', function () {
-  for (let address in addresses) {
+  for (const address in addresses) {
     this.timeout(60000)
     it(`${address}: ${addresses[address]}`, async function () {
-      let contract = parser.makeContract(address)
-      let info = await parser.getContractMethodsAndERCInterfaces(address, contract)
-      let { interfaces } = info
+      const contract = parser.makeContract(address)
+      const info = await parser.getContractMethodsAndERCInterfaces(address, contract)
+      const { interfaces } = info
       assert.includeMembers(interfaces, addresses[address])
     })
   }
