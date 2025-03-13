@@ -15,26 +15,26 @@ export default {
           values: ['0x038d7ea4c68000', '0x038d7ea4c68000']
         },
         abi: {
-          'anonymous': false,
-          'inputs': [
+          anonymous: false,
+          inputs: [
             {
-              'indexed': true,
-              'name': 'from',
-              'type': 'address'
+              indexed: true,
+              name: 'from',
+              type: 'address'
             },
             {
-              'indexed': true,
-              'name': 'to',
-              'type': 'address[]'
+              indexed: true,
+              name: 'to',
+              type: 'address[]'
             },
             {
-              'indexed': false,
-              'name': 'values',
-              'type': 'uint256[]'
+              indexed: false,
+              name: 'values',
+              type: 'uint256[]'
             }
           ],
-          'name': 'TransferBatch',
-          'type': 'event'
+          name: 'TransferBatch',
+          type: 'event'
         }
       }
     ]

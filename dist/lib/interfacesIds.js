@@ -47,7 +47,7 @@ const interfacesIds = exports.interfacesIds = {
 };
 
 function makeInterface(methods) {
-  let id = (0, _utils.erc165IdFromMethods)(methods);
+  const id = (0, _utils.erc165IdFromMethods)(methods);
   return { methods, id };
 }var _default = exports.default =
 

@@ -100,9 +100,9 @@ class Contract {
    */
   async call(method, params = [], txData = {}) {
     try {
-      if (!this.nod3) throw new Error(`Set nod3 instance before call`);
-      if (!this.address) throw new Error(`The contract address is not defined`);
-      if (!Array.isArray(params)) throw new Error(`Params must be an array`);
+      if (!this.nod3) throw new Error('Set nod3 instance before call');
+      if (!this.address) throw new Error('The contract address is not defined');
+      if (!Array.isArray(params)) throw new Error('Params must be an array');
 
       const data = this.encodeCall(method, params);
       const to = this.address;

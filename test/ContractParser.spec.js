@@ -8,14 +8,13 @@ import Contract from '../src/lib/Contract'
 import { Bridge, HEROV6, USDRIF, USDCe } from './TestContracts'
 import { PROXY_TYPES } from '../src/lib/types'
 
-const originalConsoleLog = console.log
-
-console.log = function (message) {
-  if (!String(message).includes('duplicate definition')) {
-    originalConsoleLog(message)
-  }
-}
-
+// Use this to suppress duplicate definition warning spam from ethers
+// const originalConsoleLog = console.log
+// console.log = function (message) {
+//   if (!String(message).includes('duplicate definition')) {
+//     originalConsoleLog(message)
+//   }
+// }
 
 const getNod3Instance = (network) => {
   if (!network) {
@@ -25,7 +24,7 @@ const getNod3Instance = (network) => {
   if (network === 'mainnet') {
     return nod3Connect('https://public-node.rsk.co')
   }
-  
+
   return nod3Connect('https://public-node.testnet.rsk.co')
 }
 
@@ -56,7 +55,7 @@ describe('Contract parser', function () {
       const nod3 = getNod3Instance('testnet')
       const parser = new ContractParser({ nod3 })
       const tokenAddress = '0xebea27d994371cd0cb9896ae4c926bc5221f6317'
-      let contract = parser.makeContract(tokenAddress)
+      const contract = parser.makeContract(tokenAddress)
       const tokenData = await parser.getTokenData(contract)
 
       if (tokenData.totalSupply) {
@@ -71,7 +70,7 @@ describe('Contract parser', function () {
     it('should return methods from ABI', async () => {
       const methods = ContractParser.getMethodsFromAbi(ERC20_ABI)
       expect(methods).to.have.length(9)
-      
+
       const methodsSignatures = methods.map(method => solidityName(method))
       const expectedSignatures = interfacesIds.ERC20.methods
 
@@ -118,12 +117,12 @@ describe('Contract parser', function () {
       expect(() => parser.setAbi('invalid')).to.throw('ABI must be an array')
     })
   })
-  
+
   describe('5) getAbiMethods()', () => {
     const nod3 = getNod3Instance('testnet')
     const parser = new ContractParser({ nod3 })
     parser.setAbi(ERC20_ABI)
-    
+
     const methods = parser.getAbiMethods()
 
     expect(Object.keys(methods)).to.have.length(9)
@@ -165,7 +164,7 @@ describe('Contract parser', function () {
 
     for (const { method, expected } of testCases) {
       it(`should return details for "${method.name}" method`, () => {
-        expect(method).to.exist
+        expect(method).to.be.an('object')
         expect(method.name).to.equal(expected.name)
         expect(method.method).to.equal(expected.method)
         expect(method.signature).to.equal(expected.signature)
@@ -197,13 +196,13 @@ describe('Contract parser', function () {
   describe('8) mapInterfacesToERCs()', () => {
     const nod3 = getNod3Instance('testnet')
     const parser = new ContractParser({ nod3 })
-    
+
     const testCases = [
       {
         interfaces: {
-          'ERC20': true,
-          'ERC721': true,
-          'ERC165': false,
+          ERC20: true,
+          ERC721: true,
+          ERC165: false
         },
         expected: ['ERC20', 'ERC721']
       },
@@ -213,13 +212,13 @@ describe('Contract parser', function () {
       },
       {
         interfaces: {
-          'ERC20': false,
-          'ERC1967': true
+          ERC20: false,
+          ERC1967: true
         },
         expected: ['ERC1967']
       }
     ]
-    
+
     for (const { interfaces, expected } of testCases) {
       it(`should map interfaces to ERCs ${JSON.stringify(expected)}`, () => {
         const result = parser.mapInterfacesToERCs(interfaces)
@@ -309,7 +308,7 @@ describe('Contract parser', function () {
     })
   })
 
-  describe('14) getContractMethodsAndERCInterfaces()', function() {
+  describe('14) getContractMethodsAndERCInterfaces()', function () {
     this.timeout(60000)
 
     const testContracts = [Bridge, HEROV6, USDRIF, USDCe]
@@ -330,7 +329,7 @@ describe('Contract parser', function () {
               methods: verifiedMethods,
               interfaces: verifiedInterfaces
             } = await verifiedParser.getContractMethodsAndERCInterfaces(contract.address)
-            
+
             expect(verifiedMethods).to.have.length(expectedVerifiedMethods.length).and.to.include.all.members(expectedVerifiedMethods)
             expect(verifiedInterfaces).to.have.length(expectedVerifiedInterfaces.length).and.to.include.all.members(expectedVerifiedInterfaces)
           }
@@ -358,7 +357,7 @@ describe('Contract parser', function () {
               methods: implVerifiedMethods,
               interfaces: implVerifiedInterfaces
             } = await implVerifiedParser.getContractMethodsAndERCInterfaces(contract.proxyDetails.implementationAddress)
-            
+
             expect(implVerifiedMethods).to.have.length(expectedImplVerifiedMethods.length).and.to.include.all.members(expectedImplVerifiedMethods)
             expect(implVerifiedInterfaces).to.have.length(expectedImplVerifiedInterfaces.length).and.to.include.all.members(expectedImplVerifiedInterfaces)
 
@@ -400,10 +399,10 @@ describe('Contract parser', function () {
         isUpgradeable,
         implementationAddress,
         beaconAddress,
-        proxyType,
+        proxyType
       } = proxyDetails
 
-      expect(proxyDetails).to.exist
+      expect(proxyDetails).to.be.an('object')
       expect(address).to.equal(USDRIF.address)
       expect(isUpgradeable).to.equal(true)
       expect(proxyType).to.equal(PROXY_TYPES.ERC1967.Normal)
@@ -420,10 +419,10 @@ describe('Contract parser', function () {
         isUpgradeable,
         implementationAddress,
         beaconAddress,
-        proxyType,
+        proxyType
       } = proxyDetails
 
-      expect(proxyDetails).to.exist
+      expect(proxyDetails).to.be.an('object')
       expect(address).to.equal(HEROV6.address)
       expect(isUpgradeable).to.equal(false)
       expect(proxyType).to.equal(null)
@@ -442,10 +441,10 @@ describe('Contract parser', function () {
         isUpgradeable,
         implementationAddress,
         beaconAddress,
-        proxyType,
+        proxyType
       } = proxyDetails
 
-      expect(proxyDetails).to.exist
+      expect(proxyDetails).to.be.an('object')
       expect(address).to.equal(USDCe.address)
       expect(isUpgradeable).to.equal(true)
       expect(proxyType).to.equal(PROXY_TYPES.OZUnstructuredStorage)
@@ -462,10 +461,10 @@ describe('Contract parser', function () {
         isUpgradeable,
         implementationAddress,
         beaconAddress,
-        proxyType,
+        proxyType
       } = proxyDetails
 
-      expect(proxyDetails).to.exist
+      expect(proxyDetails).to.be.an('object')
       expect(address).to.equal(HEROV6.address)
       expect(isUpgradeable).to.equal(false)
       expect(proxyType).to.equal(null)
@@ -474,7 +473,7 @@ describe('Contract parser', function () {
     })
   })
 
-  describe('18) getProxyDetails()', function() {
+  describe('18) getProxyDetails()', function () {
     this.timeout(60000)
 
     const testCases = [
@@ -544,7 +543,7 @@ describe('Contract parser', function () {
             interfaces
           } = proxyDetails
 
-          expect(proxyDetails).to.exist
+          expect(proxyDetails).to.be.an('object')
           expect(address).to.equal(expectedProxyDetails.address)
           expect(isUpgradeable).to.equal(expectedProxyDetails.isUpgradeable)
           expect(proxyType).to.equal(expectedProxyDetails.proxyType)

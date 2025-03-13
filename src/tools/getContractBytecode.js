@@ -1,7 +1,7 @@
 import { nod3Connect } from '../lib/nod3Connect'
 import { ContractParser } from '../lib/ContractParser'
 
-async function main() {
+async function main () {
   const contractAddress = process.argv[2]
   const network = process.argv[3]
   let nod3Url = ''

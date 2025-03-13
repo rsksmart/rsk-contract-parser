@@ -12,54 +12,54 @@ export default class Contract {
    * @param {Object} options.nod3 - The nod3 instance
    * @throws {Error} If the ABI is invalid
    */
-  constructor(abi, { address, nod3 } = {}) {
+  constructor (abi, { address, nod3 } = {}) {
     if (!abi || typeof abi !== 'object') throw new Error('Invalid abi')
-    
-    this.abi = abi;
-    this.address = address;
-    this.nod3 = nod3;
-    this.contractInterface = new Interface(abi);
+
+    this.abi = abi
+    this.address = address
+    this.nod3 = nod3
+    this.contractInterface = new Interface(abi)
   }
 
   /**
    * Sets the address of the contract.
    * @param {string} newAddress - The new address of the contract
    */
-  setAddress(newAddress) {
-    this.address = newAddress;
+  setAddress (newAddress) {
+    this.address = newAddress
   }
 
   /**
    * Gets the address of the contract.
    * @returns {string} The address of the contract
    */
-  getAddress() {
-    return this.address;
+  getAddress () {
+    return this.address
   }
 
   /**
    * Sets the nod3 instance.
    * @param {Object} nod3Instance - The nod3 instance
    */
-  setNod3(nod3Instance) {
-    this.nod3 = nod3Instance;
+  setNod3 (nod3Instance) {
+    this.nod3 = nod3Instance
   }
 
   /**
    * Gets the contract ABI.
    * @returns {Object} The contract ABI
    */
-  getAbi() {
-    return this.abi;
+  getAbi () {
+    return this.abi
   }
 
   /**
    * Sets the contract ABI.
    * @param {Object} newAbi - The new contract ABI
    */
-  setAbi(newAbi) {
-    this.abi = newAbi;
-    this.contractInterface = new Interface(newAbi);
+  setAbi (newAbi) {
+    this.abi = newAbi
+    this.contractInterface = new Interface(newAbi)
   }
 
   /**
@@ -68,8 +68,8 @@ export default class Contract {
    * @param {Array} params - The parameters for the method call
    * @returns {string} The encoded call data
    */
-  encodeCall(method, params = []) {
-    return this.contractInterface.encodeFunctionData(method, params);
+  encodeCall (method, params = []) {
+    return this.contractInterface.encodeFunctionData(method, params)
   }
 
   /**
@@ -78,15 +78,15 @@ export default class Contract {
    * @param {string} data - The encoded call data
    * @returns {Object} The decoded call result
    */
-  decodeCall(method, data) {
+  decodeCall (method, data) {
     if (method instanceof FunctionFragment) {
-      const { outputs } = method;
-      const decoded = this.contractInterface.decodeFunctionResult(method, data);
-      return (Array.isArray(decoded) && outputs && outputs.length < 2) ? decoded[0] : decoded;
+      const { outputs } = method
+      const decoded = this.contractInterface.decodeFunctionResult(method, data)
+      return (Array.isArray(decoded) && outputs && outputs.length < 2) ? decoded[0] : decoded
     } else {
-      const { outputs } = this.contractInterface.getFunction(method);
-      const decoded = this.contractInterface.decodeFunctionResult(method, data);
-      return (Array.isArray(decoded) && outputs && outputs.length < 2) ? decoded[0] : decoded;
+      const { outputs } = this.contractInterface.getFunction(method)
+      const decoded = this.contractInterface.decodeFunctionResult(method, data)
+      return (Array.isArray(decoded) && outputs && outputs.length < 2) ? decoded[0] : decoded
     }
   }
 
@@ -98,19 +98,19 @@ export default class Contract {
    * @returns {Promise<*>} A promise that resolves to the call result
    * @throws {Error} If nod3 is not set, address is not defined, or params is not an array
    */
-  async call(method, params = [], txData = {}) {
+  async call (method, params = [], txData = {}) {
     try {
-      if (!this.nod3) throw new Error(`Set nod3 instance before call`);
-      if (!this.address) throw new Error(`The contract address is not defined`);
-      if (!Array.isArray(params)) throw new Error(`Params must be an array`);
-      
-      const data = this.encodeCall(method, params);
-      const to = this.address;
-      const tx = Object.assign(txData, { to, data });
-      const result = await this.nod3.eth.call(tx);
-      return this.decodeCall(method, result);
+      if (!this.nod3) throw new Error('Set nod3 instance before call')
+      if (!this.address) throw new Error('The contract address is not defined')
+      if (!Array.isArray(params)) throw new Error('Params must be an array')
+
+      const data = this.encodeCall(method, params)
+      const to = this.address
+      const tx = Object.assign(txData, { to, data })
+      const result = await this.nod3.eth.call(tx)
+      return this.decodeCall(method, result)
     } catch (err) {
-      return Promise.reject(err);
+      return Promise.reject(err)
     }
   }
 }

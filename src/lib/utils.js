@@ -16,17 +16,17 @@ export const processInputType = input => {
   if (input.type !== 'tuple' && !input.type.startsWith('tuple[')) {
     return input.type
   }
-  
+
   // Process tuple components
   const componentsTypes = input.components.map(component => processInputType(component))
   const tupleRepresentation = `(${componentsTypes.join(',')})`
-  
+
   // If it's an array of tuples, append the array brackets
   if (input.type.startsWith('tuple[')) {
     const arrayBrackets = input.type.substring(5) // extract the array part: [] for dynamic array, '[number]' for fixed array
     return `${tupleRepresentation}${arrayBrackets}`
   }
-  
+
   return tupleRepresentation
 }
 
@@ -56,15 +56,15 @@ export const removeAbiSignatureData = (abi) => {
 }
 
 export const getInputsIndexes = abi => {
-  let { inputs } = abi
+  const { inputs } = abi
   return (inputs && abi.type === 'event') ? inputs.map(i => i.indexed) : []
 }
 
 export const abiSignatureData = abi => {
-  let method = solidityName(abi)
-  let signature = (method) ? soliditySignature(method) : null
-  let index = getInputsIndexes(abi)
-  let indexed = (index) ? index.filter(i => i === true).length : 0
+  const method = solidityName(abi)
+  const signature = (method) ? soliditySignature(method) : null
+  const index = getInputsIndexes(abi)
+  const indexed = (index) ? index.filter(i => i === true).length : 0
   let eventSignature = null
   if ((method && abi.type === 'event')) {
     eventSignature = soliditySignature(`${method}${Buffer.from(index).toString('hex')}`)
@@ -73,7 +73,7 @@ export const abiSignatureData = abi => {
 }
 
 export const addSignatureDataToAbi = (abi, skip) => {
-  abi.map((value, i) => {
+  abi.forEach(value => {
     if (!value[ABI_SIGNATURE] || !skip) {
       value[ABI_SIGNATURE] = abiSignatureData(value)
     }
@@ -82,7 +82,7 @@ export const addSignatureDataToAbi = (abi, skip) => {
 }
 
 export const erc165Id = selectors => {
-  let id = selectors.map(s => Buffer.from(s, 'hex'))
+  const id = selectors.map(s => Buffer.from(s, 'hex'))
     .reduce((a, bytes) => {
       for (let i = 0; i < INTERFACE_ID_BYTES; i++) {
         a[i] = a[i] ^ bytes[i]
@@ -103,12 +103,12 @@ export const getSignatureDataFromAbi = abi => {
 export function filterEvents (abi) {
   const type = 'event'
   // get events from ABI
-  let events = abi.filter(a => a.type === type)
+  const events = abi.filter(a => a.type === type)
   // remove events from ABI
   abi = abi.filter(a => a.type !== type)
-  let keys = [...new Set(events.map(e => e[ABI_SIGNATURE].eventSignature))]
-  events = keys.map(k => events.find(e => e[ABI_SIGNATURE].eventSignature === k))
-  abi = abi.concat(events)
+  const keys = [...new Set(events.map(e => e[ABI_SIGNATURE].eventSignature))]
+  const filteredEvents = keys.map(k => events.find(e => e[ABI_SIGNATURE].eventSignature === k))
+  abi = abi.concat(filteredEvents)
   return abi
 }
 
@@ -122,13 +122,13 @@ export async function binarySearchNumber (searchCb, high, low) {
     high = parseInt(high || 0)
     low = parseInt(low || 0)
     if (typeof searchCb !== 'function') throw new Error('SeachCb must be a function')
-    let [l, h] = await Promise.all([low, high].map(b => searchCb(b)))
+    const [l, h] = await Promise.all([low, high].map(b => searchCb(b)))
     if (l !== h) {
       if (high === low + 1) {
         return high
       } else {
-        let mid = Math.floor(high / 2 + low / 2)
-        let res = await Promise.all([
+        const mid = Math.floor(high / 2 + low / 2)
+        const res = await Promise.all([
           binarySearchNumber(searchCb, high, mid),
           binarySearchNumber(searchCb, mid, low)])
         return filterArr(res)

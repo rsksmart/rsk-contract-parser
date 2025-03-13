@@ -1,4 +1,3 @@
-
 import { result as tx } from './bridge_04.json'
 
 export default {

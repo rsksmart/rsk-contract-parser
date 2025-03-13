@@ -22,8 +22,6 @@ import {
 } from './utils'
 import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
 // import ERC165_ABI from './jsonAbis/ERC165.json'
-import { FunctionFragment } from '@ethersproject/abi'
-import { Nod3 } from '@rsksmart/nod3/dist/classes/Nod3'
 
 /**
  * The ContractParser class handles the analysis and interpretation of Ethereum smart contracts.
@@ -57,7 +55,7 @@ export class ContractParser {
     this.nod3 = nod3
     this.nativeContracts = NativeContracts(initConfig)
     if (this.netId) {
-      let bitcoinNetwork = bitcoinRskNetWorks[this.netId]
+      const bitcoinNetwork = bitcoinRskNetWorks[this.netId]
       this.nativeContractsEvents = NativeContractsDecoder({ bitcoinNetwork, txBlockNumber })
     }
   }
@@ -68,7 +66,7 @@ export class ContractParser {
    * @param {boolean} [addAbiSignatureData=false] - Whether to add the ABI signature data to the methods (default: false)
    * @returns {Array} The methods
    */
-  static getMethodsFromAbi(abi, addAbiSignatureData = false) {
+  static getMethodsFromAbi (abi, addAbiSignatureData = false) {
     const methods = abi
       .filter(fragment => fragment.type === 'function')
 
@@ -131,12 +129,12 @@ export class ContractParser {
    * Retrieves the methods and their selectors from the ABI.
    */
   getMethodsSelectors () {
-    let selectors = {}
-    let methods = this.getAbiMethods()
+    const selectors = {}
+    const methods = this.getAbiMethods()
 
-    for (let m in methods) {
-      let method = methods[m]
-      let signature = method.signature || soliditySignature(m)
+    for (const m in methods) {
+      const method = methods[m]
+      const signature = method.signature || soliditySignature(m)
       selectors[m] = soliditySelector(signature)
     }
     return selectors
@@ -146,13 +144,16 @@ export class ContractParser {
    * Retrieves the methods and their signatures from the ABI.
    */
   getAbiMethods () {
-    let methods = {}
-    this.abi.filter(def => def.type === 'function')
-      .map(m => {
-        let sig = m[ABI_SIGNATURE] || abiSignatureData(m)
+    const methods = {}
+
+    this.abi
+      .filter(def => def.type === 'function')
+      .forEach(m => {
+        const sig = m[ABI_SIGNATURE] || abiSignatureData(m)
         sig.name = m.name
         methods[sig.method] = sig
       })
+
     return methods
   }
 
@@ -176,15 +177,15 @@ export class ContractParser {
    */
   addEventAddresses (event) {
     const { abi, args } = event
-    let _addresses = event._addresses || []
+    const _addresses = event._addresses || []
     if (abi && args) {
-      let inputs = abi.inputs || []
+      const inputs = abi.inputs || []
       inputs.forEach((v, i) => {
         if (v.type === 'address') {
           _addresses.push(args[i])
         }
         if (v.type === 'address[]') {
-          let value = args[i] || []
+          const value = args[i] || []
           if (Array.isArray(value)) { // temp fix to undecoded events
             value.forEach(v => _addresses.push(v))
           } else {
@@ -227,7 +228,7 @@ export class ContractParser {
    * @returns {Contract} A contract instance
    */
   makeContract (address) {
-    let { nod3 } = this
+    const { nod3 } = this
     return new Contract(this.abi, { address, nod3 })
   }
 
@@ -257,14 +258,14 @@ export class ContractParser {
    */
   async getTokenData (contract, { methods } = {}) {
     methods = methods || ['name', 'symbol', 'decimals', 'totalSupply']
-    let result = await Promise.all(
+    const result = await Promise.all(
       methods.map(m =>
         this.call(m, contract)
           .then(res => res)
           .catch(err => this.log.trace(`[Contract: ${contract.getAddress()}] Error executing ${m}  Error: ${err}`)))
     )
     return result.reduce((v, a, i) => {
-      let name = methods[i]
+      const name = methods[i]
       v[name] = a
       return v
     }, {})
@@ -275,7 +276,7 @@ export class ContractParser {
    * @param {Object} interfaces - The interfaces to map
    * @returns {Array} The mapped interfaces
    */
-  mapInterfacesToERCs(interfaces) {
+  mapInterfacesToERCs (interfaces) {
     return Object.keys(interfaces)
       .filter(k => interfaces[k] === true)
       .map(t => contractsInterfaces[t] || t)
@@ -287,20 +288,20 @@ export class ContractParser {
    * @param {string} selector - The selector to check for
    * @returns {boolean} True if the selector is found in the contract bytecode, false otherwise
    */
-  hasMethodSelector(contractByteCode, selector) {
+  hasMethodSelector (contractByteCode, selector) {
     return selector && contractByteCode && contractByteCode.includes(selector)
   }
 
   /**
    * Retrieves the methods from the contract bytecode.
-   * 
-   * This bytecode is also the txInputData on contract creation transactions. 
+   *
+   * This bytecode is also the txInputData on contract creation transactions.
    * Note that using the default ABI for methods validation may not be 100% precise. Therefore, it is recommended to set a verified contract ABI and use the `getAbiMethods` method.
-   * 
+   *
    * @param {string} contractByteCode - The contract bytecode to analyze.
    */
   getMethodsFromContractByteCode (contractByteCode) {
-    let methods = this.getMethodsSelectors()
+    const methods = this.getMethodsSelectors()
     return Object.keys(methods)
       .filter(method => this.hasMethodSelector(contractByteCode, methods[method]) === true)
   }
@@ -313,7 +314,7 @@ export class ContractParser {
     const contractByteCode = await this.getContractCodeFromNode(address)
     const methods = this.getMethodsFromContractByteCode(contractByteCode)
     const interfaces = this.getInterfacesByMethods(methods)
-  
+
     return { methods, interfaces }
   }
 
@@ -516,16 +517,16 @@ export class ContractParser {
    * @param {Array} methods - The methods of the contract
    */
   getInterfacesByMethods (methods) {
-    const interfaces = Object.keys(interfacesIds);
+    const interfaces = Object.keys(interfacesIds)
 
-    const mappedInterfaces = interfaces.map(i => [i, includesAll(methods, interfacesIds[i].methods)]);
+    const mappedInterfaces = interfaces.map(i => [i, includesAll(methods, interfacesIds[i].methods)])
 
     const reducedInterfaces = mappedInterfaces.reduce((obj, value) => {
-      obj[value[0]] = value[1];
-      return obj;
-    }, {});
+      obj[value[0]] = value[1]
+      return obj
+    }, {})
 
-    return this.mapInterfacesToERCs(reducedInterfaces);
+    return this.mapInterfacesToERCs(reducedInterfaces)
   }
 
   // /**
@@ -563,7 +564,7 @@ export class ContractParser {
   //   // Response values:
   //   // false: interface not supported
   //   // null: erc165 not implemented
-  //   if (res === false || res === null) { 
+  //   if (res === false || res === null) {
   //     return false // normalize response
   //   } else {
   //     return true

@@ -2,7 +2,7 @@ import { BcSearch } from '../index'
 import { nod3Connect } from '../lib/nod3Connect'
 import { isAddress } from '@rsksmart/rsk-utils'
 
-const url = process.env['URL'] || 'http://localhost:4444'
+const url = process.env.URL || 'http://localhost:4444'
 const address = process.argv[2]
 const highBlock = process.argv[3]
 
@@ -22,7 +22,7 @@ async function search (address, highBlock) {
       throw new Error(`The address ${address} has no code at block ${highBlock}`)
     }
     const bcsearch = BcSearch(nod3)
-    let res = await bcsearch.deploymentTx(address.toLowerCase(), { highBlock })
+    const res = await bcsearch.deploymentTx(address.toLowerCase(), { highBlock })
     console.log(res)
   } catch (err) {
     console.error(err)
@@ -35,7 +35,7 @@ function help (msg) {
   console.log('Usage:')
   console.log(`node ${process.argv[1]} address [highestBlock]`)
   console.log()
-  console.log(`Set environment variable URL to change node url`)
-  console.log(`Example: export URL=http://localhost:4444`)
+  console.log('Set environment variable URL to change node url')
+  console.log('Example: export URL=http://localhost:4444')
   process.exit(0)
 }

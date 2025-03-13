@@ -18,7 +18,7 @@ const PREFIXES = {
   }
 }
 const getNetPrefix = netName => {
-  let prefixes = PREFIXES[netName]
+  const prefixes = PREFIXES[netName]
   if (!prefixes) throw new Error(`Unknown network ${netName}`)
   return prefixes
 }
@@ -35,7 +35,7 @@ export const h160toAddress = (hash160, { network, prefixKey }) => {
   const prefix = getNetPrefix(network)[prefixKey]
   hash160 = (Buffer.isBuffer(hash160)) ? hash160.toString('hex') : remove0x(hash160)
   hash160 = `${prefix}${hash160}`
-  let check = sha256(sha256(hash160)).slice(0, 8)
+  const check = sha256(sha256(hash160)).slice(0, 8)
   return bs58.encode(Buffer.from(`${hash160}${check}`, 'hex'))
 }
 
