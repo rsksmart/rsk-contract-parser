@@ -307,7 +307,7 @@ export class ContractParser {
   }
 
   /**
-   * Retrieves the contract methods and ERC interfaces.
+   * Retrieves the contract methods and ERC interfaces. Uses the current set ABI to inspect the contract bytecode and validate methods and interfaces
    * @param {string} address - The contract address
    */
   async getContractMethodsAndERCInterfaces (address) {
@@ -340,10 +340,7 @@ export class ContractParser {
 
       if (isAddress(proxyDetails.implementationAddress)) {
         // Set implementation methods and interfaces
-        const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(
-          proxyDetails.implementationAddress,
-          this.makeContract(proxyDetails.implementationAddress)
-        )
+        const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(proxyDetails.implementationAddress)
         proxyDetails.methods = methods
         proxyDetails.interfaces = [
           ...interfaces,
@@ -362,10 +359,7 @@ export class ContractParser {
 
         if (isAddress(proxyDetails.implementationAddress)) {
           // Set implementation methods and interfaces
-          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(
-            proxyDetails.implementationAddress,
-            this.makeContract(proxyDetails.implementationAddress)
-          )
+          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(proxyDetails.implementationAddress)
           proxyDetails.methods = methods
           proxyDetails.interfaces = [
             ...interfaces,
