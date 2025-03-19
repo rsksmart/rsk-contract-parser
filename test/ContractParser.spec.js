@@ -6,7 +6,7 @@ import interfacesIds from '../src/lib/interfacesIds'
 import { solidityName } from '../src/lib/utils'
 import Contract from '../src/lib/Contract'
 import { Bridge, HEROV6, USDRIF, USDCe } from './TestContracts'
-import { PROXY_TYPES } from '../src/lib/types'
+import { contractsInterfaces, PROXY_TYPES } from '../src/lib/types'
 
 // Use this to suppress duplicate definition warning spam from ethers
 // const originalConsoleLog = console.log
@@ -311,7 +311,7 @@ describe('Contract parser', function () {
   describe('14) getContractMethodsAndERCInterfaces()', function () {
     this.timeout(60000)
 
-    const testContracts = [Bridge, HEROV6, USDRIF, USDCe]
+    const testContracts = [HEROV6, USDRIF, USDCe]
 
     for (const contract of testContracts) {
       describe(`${contract.name} ${contract.address} (${contract.network})`, () => {
@@ -396,7 +396,7 @@ describe('Contract parser', function () {
       const proxyDetails = await parser.isERC1967Proxy(USDRIF.address)
       const {
         address,
-        isUpgradeable,
+        isProxy,
         implementationAddress,
         beaconAddress,
         proxyType
@@ -404,7 +404,7 @@ describe('Contract parser', function () {
 
       expect(proxyDetails).to.be.an('object')
       expect(address).to.equal(USDRIF.address)
-      expect(isUpgradeable).to.equal(true)
+      expect(isProxy).to.equal(true)
       expect(proxyType).to.equal(PROXY_TYPES.ERC1967.Normal)
       expect(implementationAddress).to.equal(USDRIF.proxyDetails.implementationAddress)
       expect(beaconAddress).to.equal(null)
@@ -416,7 +416,7 @@ describe('Contract parser', function () {
       const proxyDetails = await parser.isERC1967Proxy(HEROV6.address)
       const {
         address,
-        isUpgradeable,
+        isProxy,
         implementationAddress,
         beaconAddress,
         proxyType
@@ -424,7 +424,7 @@ describe('Contract parser', function () {
 
       expect(proxyDetails).to.be.an('object')
       expect(address).to.equal(HEROV6.address)
-      expect(isUpgradeable).to.equal(false)
+      expect(isProxy).to.equal(false)
       expect(proxyType).to.equal(null)
       expect(implementationAddress).to.equal(null)
       expect(beaconAddress).to.equal(null)
@@ -438,18 +438,16 @@ describe('Contract parser', function () {
       const proxyDetails = await parser.isOZUnstructuredStorageProxy(USDCe.address)
       const {
         address,
-        isUpgradeable,
+        isProxy,
         implementationAddress,
-        beaconAddress,
         proxyType
       } = proxyDetails
 
       expect(proxyDetails).to.be.an('object')
       expect(address).to.equal(USDCe.address)
-      expect(isUpgradeable).to.equal(true)
+      expect(isProxy).to.equal(true)
       expect(proxyType).to.equal(PROXY_TYPES.OZUnstructuredStorage)
       expect(implementationAddress).to.equal(USDCe.proxyDetails.implementationAddress)
-      expect(beaconAddress).to.equal(null)
     })
 
     it(`should return empty OZ unstructured storage proxy details for ${HEROV6.name} ${HEROV6.address} (${HEROV6.network})`, async () => {
@@ -458,99 +456,191 @@ describe('Contract parser', function () {
       const proxyDetails = await parser.isOZUnstructuredStorageProxy(HEROV6.address)
       const {
         address,
-        isUpgradeable,
+        isProxy,
         implementationAddress,
-        beaconAddress,
         proxyType
       } = proxyDetails
 
       expect(proxyDetails).to.be.an('object')
       expect(address).to.equal(HEROV6.address)
-      expect(isUpgradeable).to.equal(false)
+      expect(isProxy).to.equal(false)
       expect(proxyType).to.equal(null)
       expect(implementationAddress).to.equal(null)
-      expect(beaconAddress).to.equal(null)
     })
   })
 
-  describe('18) getProxyDetails()', function () {
+  describe('18) getContractDetails()', function () {
     this.timeout(60000)
 
     const testCases = [
       {
         contract: Bridge,
-        expectedProxyDetails: {
+        expectedContractDetails: {
           address: Bridge.address,
-          isUpgradeable: false,
+          isProxy: false,
           implementationAddress: null,
           beaconAddress: null,
           proxyType: null,
-          methods: [],
-          interfaces: []
+          unverifiedMethods: Bridge.unverifiedMethods,
+          unverifiedInterfaces: Bridge.unverifiedInterfaces,
+          verifiedMethods: Bridge.verifiedMethods,
+          verifiedInterfaces: Bridge.verifiedInterfaces
         }
       },
       {
         contract: HEROV6,
-        expectedProxyDetails: {
+        expectedContractDetails: {
           address: HEROV6.address,
-          isUpgradeable: false,
+          isProxy: false,
           implementationAddress: null,
           beaconAddress: null,
           proxyType: null,
-          methods: [],
-          interfaces: []
+          unverifiedMethods: HEROV6.unverifiedMethods,
+          unverifiedInterfaces: HEROV6.unverifiedInterfaces,
+          verifiedMethods: HEROV6.verifiedMethods,
+          verifiedInterfaces: HEROV6.verifiedInterfaces
         }
       },
       {
         contract: USDRIF,
-        expectedProxyDetails: {
+        expectedContractDetails: {
           address: USDRIF.address,
-          isUpgradeable: true,
+          isProxy: true,
           implementationAddress: USDRIF.proxyDetails.implementationAddress,
           beaconAddress: null,
           proxyType: PROXY_TYPES.ERC1967.Normal,
-          methods: USDRIF.proxyDetails.unverifiedImplementationMethods,
-          interfaces: [...USDRIF.proxyDetails.unverifiedImplementationInterfaces, 'ERC1967', 'ERC1822']
+          unverifiedMethods: USDRIF.proxyDetails.unverifiedImplementationMethods,
+          unverifiedInterfaces: [
+            ...USDRIF.proxyDetails.unverifiedImplementationInterfaces,
+            contractsInterfaces.ERC1822,
+            contractsInterfaces.ERC1967
+          ],
+          verifiedMethods: USDRIF.proxyDetails.verifiedImplementationMethods,
+          verifiedInterfaces: [
+            ...USDRIF.proxyDetails.verifiedImplementationInterfaces,
+            contractsInterfaces.ERC1822,
+            contractsInterfaces.ERC1967
+          ]
         }
       },
       {
         contract: USDCe,
-        expectedProxyDetails: {
+        expectedContractDetails: {
           address: USDCe.address,
-          isUpgradeable: true,
+          isProxy: true,
           implementationAddress: USDCe.proxyDetails.implementationAddress,
           beaconAddress: null,
           proxyType: PROXY_TYPES.OZUnstructuredStorage,
-          methods: USDCe.proxyDetails.unverifiedImplementationMethods,
-          interfaces: [...USDCe.proxyDetails.unverifiedImplementationInterfaces, 'ERC1822']
+          unverifiedMethods: USDCe.proxyDetails.unverifiedImplementationMethods,
+          unverifiedInterfaces: [
+            ...USDCe.proxyDetails.unverifiedImplementationInterfaces,
+            contractsInterfaces.ERC1822
+          ],
+          verifiedMethods: USDCe.proxyDetails.verifiedImplementationMethods,
+          verifiedInterfaces: [
+            ...USDCe.proxyDetails.verifiedImplementationInterfaces,
+            contractsInterfaces.ERC1822
+          ]
         }
       }
     ]
 
-    for (const { contract, expectedProxyDetails } of testCases) {
+    for (const { contract, expectedContractDetails } of testCases) {
       describe(`${contract.name} ${contract.address} (${contract.network})`, () => {
-        it('should return correct proxy details', async () => {
+        it('should return correct contract details - unverified ABI case', async () => {
           const nod3 = getNod3Instance(contract.network)
           const parser = new ContractParser({ nod3 })
-          const proxyDetails = await parser.getProxyDetails(contract.address)
+          const { isProxy: isProxyContract } = await parser.getContractDetails(contract.address)
+
+          // Proxy check
+          expect(isProxyContract, 'isProxyContract should be equal').to.equal(contract.proxyDetails.isProxy)
+
+          if (isProxyContract) {
+            // Update parser to use implementation ABI
+            // Unverified ABI case: use the default ABI
+            parser.setAbi()
+          }
+
+          const contractDetails = await parser.getContractDetails(contract.address)
           const {
             address,
-            isUpgradeable,
+            isProxy,
             implementationAddress,
             beaconAddress,
             proxyType,
-            methods,
-            interfaces
-          } = proxyDetails
+            methods: unverifiedMethods,
+            interfaces: unverifiedInterfaces
+          } = contractDetails
 
-          expect(proxyDetails).to.be.an('object')
-          expect(address).to.equal(expectedProxyDetails.address)
-          expect(isUpgradeable).to.equal(expectedProxyDetails.isUpgradeable)
-          expect(proxyType).to.equal(expectedProxyDetails.proxyType)
-          expect(implementationAddress).to.equal(expectedProxyDetails.implementationAddress)
-          expect(beaconAddress).to.equal(expectedProxyDetails.beaconAddress)
-          expect(methods).to.have.length(expectedProxyDetails.methods.length).and.to.include.all.members(expectedProxyDetails.methods)
-          expect(interfaces).to.have.length(expectedProxyDetails.interfaces.length).and.to.include.all.members(expectedProxyDetails.interfaces)
+          // console.log({
+          //   [`getContractDetails() - unverified ABI case - ${contract.name}`]: {
+          //     ...contractDetails,
+          //     methodsLength: unverifiedMethods.length,
+          //     interfacesLength: unverifiedInterfaces.length
+          //   }
+          // })
+
+          // General details
+          expect(contractDetails, 'contractDetails should be an object').to.be.an('object')
+          expect(address, 'address should be equal').to.equal(expectedContractDetails.address)
+          expect(isProxy, 'isProxy should be equal').to.equal(expectedContractDetails.isProxy)
+          expect(proxyType, 'proxyType should be equal').to.equal(expectedContractDetails.proxyType)
+          expect(implementationAddress, 'implementationAddress should be equal').to.equal(expectedContractDetails.implementationAddress)
+          expect(beaconAddress, 'beaconAddress should be equal').to.equal(expectedContractDetails.beaconAddress)
+
+          // Methods
+          expect(unverifiedMethods).to.have.length(expectedContractDetails.unverifiedMethods.length)
+          expect(unverifiedMethods).to.include.all.members(expectedContractDetails.unverifiedMethods)
+
+          // Interfaces
+          expect(unverifiedInterfaces).to.have.length(expectedContractDetails.unverifiedInterfaces.length)
+          expect(unverifiedInterfaces).to.include.all.members(expectedContractDetails.unverifiedInterfaces)
+        })
+
+        it('should return correct contract details - verified ABI case', async () => {
+          const nod3 = getNod3Instance(contract.network)
+          const parser = new ContractParser({ nod3, abi: contract.abi })
+          const { isProxy: isProxyContract } = await parser.getContractDetails(contract.address)
+
+          if (isProxyContract) {
+            // Update parser to use implementation ABI
+            parser.setAbi(contract.proxyDetails.implementationABI)
+          }
+
+          const contractDetails = await parser.getContractDetails(contract.address)
+          const {
+            address,
+            isProxy,
+            implementationAddress,
+            beaconAddress,
+            proxyType,
+            methods: verifiedMethods,
+            interfaces: verifiedInterfaces
+          } = contractDetails
+
+          // console.log({
+          //   [`getContractDetails() - verified ABI case - ${contract.name}`]: {
+          //     ...contractDetails,
+          //     methodsLength: verifiedMethods.length,
+          //     interfacesLength: verifiedInterfaces.length
+          //   }
+          // })
+
+          // General details
+          expect(contractDetails, 'contractDetails should be an object').to.be.an('object')
+          expect(address, 'address should be equal').to.equal(expectedContractDetails.address)
+          expect(isProxy, 'isProxy should be equal').to.equal(expectedContractDetails.isProxy)
+          expect(proxyType, 'proxyType should be equal').to.equal(expectedContractDetails.proxyType)
+          expect(implementationAddress, 'implementationAddress should be equal').to.equal(expectedContractDetails.implementationAddress)
+          expect(beaconAddress, 'beaconAddress should be equal').to.equal(expectedContractDetails.beaconAddress)
+
+          // Methods
+          expect(verifiedMethods).to.have.length(expectedContractDetails.verifiedMethods.length)
+          expect(verifiedMethods).to.include.all.members(expectedContractDetails.verifiedMethods)
+
+          // Interfaces
+          expect(verifiedInterfaces).to.have.length(expectedContractDetails.verifiedInterfaces.length)
+          expect(verifiedInterfaces).to.include.all.members(expectedContractDetails.verifiedInterfaces)
         })
       })
     }

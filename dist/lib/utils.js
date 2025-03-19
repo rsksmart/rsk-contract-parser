@@ -1,7 +1,40 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.addSignatureDataToAbi = exports.abiSignatureData = exports.abiMethods = exports.abiEvents = void 0;exports.binarySearchNumber = binarySearchNumber;exports.erc165IdFromMethods = exports.erc165Id = void 0;exports.filterEvents = filterEvents;exports.formatAddressFromSlot = formatAddressFromSlot;exports.getSignatureDataFromAbi = exports.getInputsIndexes = void 0;exports.notZero = notZero;exports.soliditySignature = exports.soliditySelector = exports.solidityName = exports.setAbi = exports.removeAbiSignatureData = exports.processInputType = void 0;var _rskUtils = require("@rsksmart/rsk-utils");
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.addSignatureDataToAbi = exports.abiSignatureData = exports.abiMethods = exports.abiEvents = void 0;exports.binarySearchNumber = binarySearchNumber;exports.erc165IdFromMethods = exports.erc165Id = void 0;exports.filterEvents = filterEvents;exports.formatAddressFromSlot = formatAddressFromSlot;exports.getSignatureDataFromAbi = exports.getInputsIndexes = exports.getBridgeMethods = exports.getBridgeAddress = exports.getBridgeAbi = void 0;exports.notZero = notZero;exports.soliditySignature = exports.soliditySelector = exports.solidityName = exports.setAbi = exports.removeAbiSignatureData = exports.processInputType = void 0;exports.toHex = toHex;var _rskUtils = require("@rsksmart/rsk-utils");
 var _types = require("./types");
-var _bignumber = _interopRequireDefault(require("bignumber.js"));function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
+var _bignumber = _interopRequireDefault(require("bignumber.js"));
+var _rskPrecompiledAbis = require("@rsksmart/rsk-precompiled-abis");
+var _addresses = require("@rsksmart/rsk-utils/dist/addresses");function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 
+const getBridgeAbi = () => {
+  try {
+    if (!_rskPrecompiledAbis.bridge || !_rskPrecompiledAbis.bridge.abi || !Array.isArray(_rskPrecompiledAbis.bridge.abi)) throw new Error('Invalid Bridge ABI');
+
+    return _rskPrecompiledAbis.bridge.abi;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};exports.getBridgeAbi = getBridgeAbi;
+
+const getBridgeMethods = () => {
+  try {
+    const bridgeAbi = getBridgeAbi();
+    return bridgeAbi.map(solidityName);
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};exports.getBridgeMethods = getBridgeMethods;
+
+const getBridgeAddress = () => {
+  try {
+    if (!_rskPrecompiledAbis.bridge || !_rskPrecompiledAbis.bridge.address || !(0, _addresses.isAddress)(_rskPrecompiledAbis.bridge.address)) throw new Error('Invalid Bridge Address');
+
+    return _rskPrecompiledAbis.bridge.address;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};exports.getBridgeAddress = getBridgeAddress;
 const setAbi = (abi) => addSignatureDataToAbi(abi, true);exports.setAbi = setAbi;
 
 const abiEvents = (abi) => abi.filter((v) => v.type === 'event');exports.abiEvents = abiEvents;
@@ -73,6 +106,10 @@ const abiSignatureData = (abi) => {
 };exports.abiSignatureData = abiSignatureData;
 
 const addSignatureDataToAbi = (abi, skip) => {
+  if (!Array.isArray(abi)) {
+    throw new Error('ABI must be an array');
+  }
+
   abi.forEach((value) => {
     if (!value[_types.ABI_SIGNATURE] || !skip) {
       value[_types.ABI_SIGNATURE] = abiSignatureData(value);
@@ -152,5 +189,18 @@ function formatAddressFromSlot(slot) {
     return `0x${slot.slice(-40)}`;
   }
   return slot;
+}
+
+/**
+ * Converts a number to a hex string.
+ * @param {number} number - The number to convert
+ * @returns {string} The hex string
+ */
+function toHex(number) {
+  if (typeof number === 'number') {
+    return '0x' + number.toString(16);
+  }
+
+  return number;
 }
 //# sourceMappingURL=utils.js.map

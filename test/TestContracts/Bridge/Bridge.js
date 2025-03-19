@@ -1,16 +1,14 @@
-import { bridge } from '@rsksmart/rsk-precompiled-abis'
-import { solidityName } from '../../../src/lib/utils'
+import { getBridgeAbi, getBridgeAddress, getBridgeMethods } from '../../../src/lib/utils'
 
-// LOVELL 7.1.0
 export const Bridge = {
-  abi: bridge.abi,
+  abi: getBridgeAbi(),
   bytecode: '0x',
   network: 'testnet',
   name: 'Bridge',
-  address: bridge.address,
-  unverifiedMethods: [],
+  address: getBridgeAddress(),
+  unverifiedMethods: getBridgeMethods(),
   unverifiedInterfaces: [],
-  verifiedMethods: bridge.abi.map(solidityName),
+  verifiedMethods: getBridgeMethods(),
   verifiedInterfaces: [],
   proxyDetails: {
     isProxy: false,

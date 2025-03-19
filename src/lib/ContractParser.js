@@ -18,10 +18,11 @@ import {
   soliditySelector,
   soliditySignature,
   formatAddressFromSlot,
-  notZero
+  notZero,
+  toHex,
+  getBridgeMethods
 } from './utils'
 import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
-// import ERC165_ABI from './jsonAbis/ERC165.json'
 
 /**
  * The ContractParser class handles the analysis and interpretation of Ethereum smart contracts.
@@ -111,12 +112,14 @@ export class ContractParser {
 
   /**
    * Sets the ABI for the ContractParser instance.
-   * @param {Array} abi - The Application Binary Interface (ABI)
+   * @param {Array} abi - The Application Binary Interface (ABI). If no ABI is provided, a default ABI will be used.
    */
   setAbi (abi) {
     try {
-      if (!Array.isArray(abi)) {
-        throw new Error('ABI must be an array')
+      if (!abi) {
+        // If no ABI is provided, use the default ABI
+        this.abi = setAbi(defaultABI)
+        return
       }
 
       this.abi = setAbi(abi)
@@ -160,11 +163,10 @@ export class ContractParser {
   /**
    * Parses transaction logs and returns decoded events.
    * @param {Array} logs - The transaction logs to parse
-   * @param {Array} [abi] - The Application Binary Interface (ABI)
    * @returns {Array} An array of decoded events
    */
-  parseTxLogs (logs, abi) {
-    return this.decodeLogs(logs, abi).map(event => {
+  parseTxLogs (logs) {
+    return this.decodeLogs(logs).map(event => {
       this.addEventAddresses(event)
       event.abi = removeAbiSignatureData(event.abi)
       return event
@@ -205,7 +207,6 @@ export class ContractParser {
   /**
    * Decodes transaction logs and returns decoded events.
    * @param {Array} logs - The transaction logs to decode
-   * @param {Array} [abi] - The Application Binary Interface (ABI)
    * @returns {Array} An array of decoded events
    */
   decodeLogs (logs) {
@@ -238,6 +239,7 @@ export class ContractParser {
    * @param {Contract} contract - The contract object
    * @param {Array} [params] - The parameters to pass to the method
    * @param {Object} [options] - The options for the call
+   * @returns {Promise<* | null>} The result of the call
    */
   async call (method, contract, params = [], options = {}) {
     try {
@@ -307,11 +309,18 @@ export class ContractParser {
   }
 
   /**
-   * Retrieves the contract methods and ERC interfaces. Uses the current set ABI to inspect the contract bytecode and validate methods and interfaces
+   * Retrieves the contract methods and ERC interfaces
+   * Uses the current set ABI to inspect the contract bytecode and validate methods and interfaces.
+   * If a block number is provided, bytecode used to validate methods and interfaces will be retrieved from the node at the given block number.
    * @param {string} address - The contract address
+   * @param {number?} [blockNumber] - Optional. Use this param to retrieve methods and interfaces for a specific block. Defaults to 'latest'.
+   * @returns {Promise<{
+   *   methods: string[],
+   *   interfaces: string[]
+   * }>} The contract methods and ERC interfaces
    */
-  async getContractMethodsAndERCInterfaces (address) {
-    const contractByteCode = await this.getContractCodeFromNode(address)
+  async getContractMethodsAndERCInterfaces (address, blockNumber) {
+    const contractByteCode = await this.getContractCodeFromNode(address, blockNumber)
     const methods = this.getMethodsFromContractByteCode(contractByteCode)
     const interfaces = this.getInterfacesByMethods(methods)
 
@@ -319,13 +328,27 @@ export class ContractParser {
   }
 
   /**
-   * Retrieves the proxy details of a contract
+   * Retrieves contract details using the current set ABI.
+   * This method also detects if the contract is a proxy.
+   * It is recommended to set the verified ABI of the contract so all methods and interfaces are detected.
+   *
    * @param {string} contractAddress - The address of the contract
+   * @param {number | string} [blockNumber] - Optional. Retrieve contract details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   *
+   * @returns {Promise<{
+   *   address: string,
+   *   isProxy: boolean,
+   *   implementationAddress: string | null,
+   *   beaconAddress: string | null,
+   *   proxyType: string | null,
+   *   methods: string[],
+   *   interfaces: string[]
+   * }>} The contract details
    */
-  async getProxyDetails (contractAddress) {
-    let proxyDetails = {
+  async getContractDetails (contractAddress, blockNumber = 'latest') {
+    const contractDetails = {
       address: contractAddress,
-      isUpgradeable: false,
+      isProxy: false,
       implementationAddress: null,
       beaconAddress: null,
       proxyType: null,
@@ -333,56 +356,85 @@ export class ContractParser {
       interfaces: []
     }
 
-    // ERC 1967 standard for proxies
-    const ERC1967ProxyDetails = await this.isERC1967Proxy(contractAddress)
-    if (ERC1967ProxyDetails.isUpgradeable) {
-      proxyDetails = ERC1967ProxyDetails
+    // Native contracts check - Bridge
+    if (this.nativeContracts.isNativeContract(contractAddress)) {
+      contractDetails.methods = getBridgeMethods()
+      return contractDetails
+    }
 
-      if (isAddress(proxyDetails.implementationAddress)) {
-        // Set implementation methods and interfaces
-        const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(proxyDetails.implementationAddress)
-        proxyDetails.methods = methods
-        proxyDetails.interfaces = [
-          ...interfaces,
-          contractsInterfaces.ERC1822,
-          contractsInterfaces.ERC1967
-        ]
-      }
+    try {
+      // ERC1967 Proxy check
+      const ERC1967ProxyDetails = await this.isERC1967Proxy(contractAddress, blockNumber)
+      if (ERC1967ProxyDetails.isProxy) {
+        contractDetails.isProxy = true
+        contractDetails.proxyType = ERC1967ProxyDetails.proxyType
+        if (isAddress(ERC1967ProxyDetails.implementationAddress)) {
+          contractDetails.implementationAddress = ERC1967ProxyDetails.implementationAddress
+          // Use implementation methods and interfaces. Append proxy standard interfaces
+          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
+          const proxyInterfaces = [contractsInterfaces.ERC1822, contractsInterfaces.ERC1967]
 
-      return proxyDetails
-    } else {
-      // Open Zeppelin Unstructured Storage Pattern (before ERC1967)
-      const OZUnstructuredStorageProxyDetails = await this.isOZUnstructuredStorageProxy(contractAddress)
-
-      if (OZUnstructuredStorageProxyDetails.isUpgradeable) {
-        proxyDetails = OZUnstructuredStorageProxyDetails
-
-        if (isAddress(proxyDetails.implementationAddress)) {
-          // Set implementation methods and interfaces
-          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(proxyDetails.implementationAddress)
-          proxyDetails.methods = methods
-          proxyDetails.interfaces = [
+          contractDetails.methods = methods
+          contractDetails.interfaces = [
             ...interfaces,
-            contractsInterfaces.ERC1822
+            ...proxyInterfaces
           ]
         }
 
-        return proxyDetails
+        return contractDetails
       }
-    }
 
-    return proxyDetails
+      // Open Zeppelin Unstructured Storage Proxy check
+      const OZUnstructuredStorageProxyDetails = await this.isOZUnstructuredStorageProxy(contractAddress, blockNumber)
+
+      if (OZUnstructuredStorageProxyDetails.isProxy) {
+        contractDetails.isProxy = true
+        contractDetails.proxyType = OZUnstructuredStorageProxyDetails.proxyType
+        if (isAddress(OZUnstructuredStorageProxyDetails.implementationAddress)) {
+          contractDetails.implementationAddress = OZUnstructuredStorageProxyDetails.implementationAddress
+          // Use implementation methods and interfaces. Append proxy standard interfaces
+          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
+          const proxyInterfaces = [contractsInterfaces.ERC1822]
+
+          contractDetails.methods = methods
+          contractDetails.interfaces = [
+            ...interfaces,
+            ...proxyInterfaces
+          ]
+        }
+
+        return contractDetails
+      }
+
+      // Normal contracts
+      const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractAddress, blockNumber)
+      contractDetails.methods = methods
+      contractDetails.interfaces = interfaces
+
+      return contractDetails
+    } catch (error) {
+      this.log.error(`[${contractAddress}] Error getting contract details: ${error}`)
+      return Promise.reject(error)
+    }
   }
 
   /**
    * Checks if the contract is a proxy contract using the ERC1967 standard.
    * @param {string} contractAddress - The address of the contract
+   * @param {number | string} [blockNumber] - Optional. Retrieve proxy details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @returns {Promise<{
+   *   address: string,
+   *   isProxy: boolean,
+   *   implementationAddress: string | null,
+   *   beaconAddress: string | null,
+   *   proxyType: string | null
+   * }>} The proxy details
    * @see https://eips.ethereum.org/EIPS/eip-1967
    */
-  async isERC1967Proxy (contractAddress) {
+  async isERC1967Proxy (contractAddress, blockNumber = 'latest') {
     const result = {
       address: contractAddress,
-      isUpgradeable: false,
+      isProxy: false,
       implementationAddress: null,
       beaconAddress: null,
       proxyType: null
@@ -393,15 +445,15 @@ export class ContractParser {
 
     let implementationSlotValue
     try {
-      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot)
+      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot, blockNumber)
     } catch (err) {
       this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.ERC1967.Normal}: ${err}`)
-      return result
+      return Promise.reject(err)
     }
 
     if (notZero(implementationSlotValue)) {
       result.proxyType = PROXY_TYPES.ERC1967.Normal
-      result.isUpgradeable = true
+      result.isProxy = true
       result.implementationAddress = formatAddressFromSlot(implementationSlotValue)
       return result
     }
@@ -411,15 +463,15 @@ export class ContractParser {
 
     let beaconSlotValue
     try {
-      beaconSlotValue = await this.getStorageSlotValueFromNode(contractAddress, beaconSlot)
+      beaconSlotValue = await this.getStorageSlotValueFromNode(contractAddress, beaconSlot, blockNumber)
     } catch (err) {
       this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.ERC1967.Beacon}: ${err}`)
-      return result
+      return Promise.reject(err)
     }
 
     if (notZero(beaconSlotValue)) {
       result.proxyType = PROXY_TYPES.ERC1967.Beacon
-      result.isUpgradeable = true
+      result.isProxy = true
 
       try {
         // Get beacon contract address
@@ -443,7 +495,7 @@ export class ContractParser {
         return result
       } catch (err) {
         this.log.warn(`[${contractAddress}] Error fetching implementation from beacon proxy: ${err}`)
-        return result
+        return Promise.reject(err)
       }
     }
 
@@ -454,56 +506,76 @@ export class ContractParser {
   /**
    * Checks if the contract is a proxy contract using the Open Zeppelin Unstructured Storage Pattern.
    * @param {string} contractAddress - The address of the contract
+   * @param {number | string} [blockNumber] - Optional. Retrieve proxy details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @returns {Promise<{
+   *   address: string,
+   *   isProxy: boolean,
+   *   implementationAddress: string | null,
+   *   proxyType: string | null
+   * }>} The proxy details
    * @see https://blog.openzeppelin.com/proxy-patterns
    * @see https://github.com/OpenZeppelin/openzeppelin-labs/tree/master/upgradeability_using_unstructured_storage
    * @see https://github.com/OpenZeppelin/openzeppelin-labs/blob/master/upgradeability_using_unstructured_storage/contracts/UpgradeabilityProxy.sol
    */
-  async isOZUnstructuredStorageProxy (contractAddress) {
+  async isOZUnstructuredStorageProxy (contractAddress, blockNumber = 'latest') {
     const result = {
       address: contractAddress,
-      isUpgradeable: false,
+      isProxy: false,
       implementationAddress: null,
-      beaconAddress: null,
       proxyType: null
     }
 
     const implementationSlot = '0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3'
     let implementationSlotValue
+
     try {
-      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot)
+      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot, blockNumber)
     } catch (err) {
       this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.OZUnstructuredStorage}: ${err}`)
-      return result
+      return Promise.reject(err)
     }
 
     if (notZero(implementationSlotValue)) {
       result.proxyType = PROXY_TYPES.OZUnstructuredStorage
-      result.isUpgradeable = true
+      result.isProxy = true
       result.implementationAddress = formatAddressFromSlot(implementationSlotValue)
 
       return result
     }
 
+    // Not a proxy contract
     return result
   }
 
   /**
-   * Retrieves the value of a storage slot from the node.
+   * Retrieves the value of a storage slot for a specific contract from the node.
    * @param {string} contractAddress - The address of the contract
    * @param {string} slot - The slot to retrieve the value from
+   * @param {number | string} [blockNumber] - Optional. Retrieve storage slot value at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
    * @returns {Promise<string>} The value of the storage slot
    */
-  async getStorageSlotValueFromNode (contractAddress, slot) {
-    return this.nod3.eth.getStorageAt(contractAddress, slot)
+  async getStorageSlotValueFromNode (contractAddress, slot, blockNumber = 'latest') {
+    if (typeof blockNumber === 'number') {
+      // Convert to hex
+      blockNumber = toHex(blockNumber)
+    }
+
+    return this.nod3.eth.getStorageAt(contractAddress, slot, blockNumber)
   }
 
   /**
-   * Retrieves the contract code from the node.
+   * Retrieves the code of a contract from the node.
    * @param {string} contractAddress - The address of the contract
+   * @param {number | string} [blockNumber] - Optional. Retrieve contract code at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
    * @returns {Promise<string>} The contract code
    */
-  async getContractCodeFromNode (contractAddress) {
-    return this.nod3.eth.getContractCodeAt(contractAddress)
+  async getContractCodeFromNode (contractAddress, blockNumber = 'latest') {
+    if (typeof blockNumber === 'number') {
+      // Convert to hex
+      blockNumber = toHex(blockNumber)
+    }
+
+    return this.nod3.eth.getContractCodeAt(contractAddress, blockNumber)
   }
 
   /**
@@ -522,69 +594,6 @@ export class ContractParser {
 
     return this.mapInterfacesToERCs(reducedInterfaces)
   }
-
-  // /**
-  //  * Retrieves the interfaces of the contract based on the ERC165 standard.
-  //  * @param {Object} contract - The contract object
-  //  * @returns {Promise<Object>} An object containing the interfaces of the contract
-  //  */
-  // async getInterfacesERC165 (contract) {
-  //   let ifaces = {}
-  //   let keys = Object.keys(interfacesIds)
-  //   for (let i of keys) {
-  //     ifaces[i] = await this.supportsInterface(contract, interfacesIds[i].id)
-  //   }
-  //   return ifaces
-  // }
-
-  // /**
-  //  * Checks if the contract supports a specific interface.
-  //  * @param {Contract} contract - The contract object
-  //  * @param {string} interfaceId - The ID of the interface to check
-  //  * @returns {Promise<boolean>} True if the contract supports the interface, false otherwise
-  //  * @see https://eips.ethereum.org/EIPS/eip-165
-  //  */
-  // async supportsInterface (contract, interfaceId) {
-  //   let res = false
-
-  //   try {
-  //     const ERC165_GAS_LIMIT = '0x7530' // 30000
-  //     const fragment = FunctionFragment.from(ERC165_ABI.find(f => f.name === 'supportsInterface'))
-  //     res = await contract.call(fragment, [interfaceId], { gas: ERC165_GAS_LIMIT })
-  //   } catch (err) {
-  //     this.log.warn(`[Contract: ${contract.getAddress()}] Error calling supportsInterface for interfaceId ${interfaceId}: ${err}`)
-  //   }
-
-  //   // Response values:
-  //   // false: interface not supported
-  //   // null: erc165 not implemented
-  //   if (res === false || res === null) {
-  //     return false // normalize response
-  //   } else {
-  //     return true
-  //   }
-  // }
-
-  // /**
-  //  * Checks if the contract implements the ERC165 standard.
-  //  * @param {Object} contract - The contract object
-  //  * @returns {Promise<boolean>} True if the contract implements the ERC165 standard, false otherwise
-  //  * @see https://eips.ethereum.org/EIPS/eip-165
-  //  */
-  // async implementsErc165 (contract) {
-  //   try {
-  //     const firstCallResult = await this.supportsInterface(contract, interfacesIds.ERC165.id)
-  //     if (firstCallResult) {
-  //       const secondCallResult = await this.supportsInterface(contract, '0xffffffff')
-  //       const isErc165 = secondCallResult === false || secondCallResult === null
-
-  //       return isErc165
-  //     }
-  //     return false
-  //   } catch (err) {
-  //     return Promise.reject(err)
-  //   }
-  // }
 }
 
 export default ContractParser

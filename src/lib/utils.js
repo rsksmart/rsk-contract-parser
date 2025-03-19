@@ -1,7 +1,40 @@
 import { keccak256, add0x } from '@rsksmart/rsk-utils'
 import { ABI_SIGNATURE, INTERFACE_ID_BYTES } from './types'
 import BigNumber from 'bignumber.js'
+import { bridge } from '@rsksmart/rsk-precompiled-abis'
+import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
 
+export const getBridgeAbi = () => {
+  try {
+    if (!bridge || !bridge.abi || !Array.isArray(bridge.abi)) throw new Error('Invalid Bridge ABI')
+
+    return bridge.abi
+  } catch (error) {
+    console.error(error)
+    return []
+  }
+}
+
+export const getBridgeMethods = () => {
+  try {
+    const bridgeAbi = getBridgeAbi()
+    return bridgeAbi.map(solidityName)
+  } catch (error) {
+    console.error(error)
+    return []
+  }
+}
+
+export const getBridgeAddress = () => {
+  try {
+    if (!bridge || !bridge.address || !isAddress(bridge.address)) throw new Error('Invalid Bridge Address')
+
+    return bridge.address
+  } catch (error) {
+    console.error(error)
+    return null
+  }
+}
 export const setAbi = abi => addSignatureDataToAbi(abi, true)
 
 export const abiEvents = abi => abi.filter(v => v.type === 'event')
@@ -73,6 +106,10 @@ export const abiSignatureData = abi => {
 }
 
 export const addSignatureDataToAbi = (abi, skip) => {
+  if (!Array.isArray(abi)) {
+    throw new Error('ABI must be an array')
+  }
+
   abi.forEach(value => {
     if (!value[ABI_SIGNATURE] || !skip) {
       value[ABI_SIGNATURE] = abiSignatureData(value)
@@ -152,4 +189,17 @@ export function formatAddressFromSlot (slot) {
     return `0x${slot.slice(-40)}`
   }
   return slot
+}
+
+/**
+ * Converts a number to a hex string.
+ * @param {number} number - The number to convert
+ * @returns {string} The hex string
+ */
+export function toHex (number) {
+  if (typeof number === 'number') {
+    return '0x' + number.toString(16)
+  }
+
+  return number
 }
