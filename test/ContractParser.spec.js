@@ -3,7 +3,7 @@ import { ContractParser } from '../src/lib/ContractParser'
 import { nod3Connect } from '../src/lib/nod3Connect'
 import ERC20_ABI from '../src/lib/jsonAbis/ERC20.json'
 import interfacesIds from '../src/lib/interfacesIds'
-import { solidityName } from '../src/lib/utils'
+import { DEFAULT_TOKEN_METHODS, solidityName } from '../src/lib/utils'
 import Contract from '../src/lib/Contract'
 import { Bridge, HEROV6, USDRIF, USDCe } from './TestContracts'
 import { contractsInterfaces, PROXY_TYPES } from '../src/lib/types'
@@ -43,8 +43,8 @@ describe('# Network', function () {
 })
 
 describe('Contract parser', function () {
-  describe('1) getTokenData()', () => {
-    it('should return the token data', async () => {
+  describe('1) getDefaultTokenData()', () => {
+    it(`should return RIF default token data: ${JSON.stringify(DEFAULT_TOKEN_METHODS)}`, async () => {
       const expectedTokenData = {
         name: 'RIF Token',
         symbol: 'RIF',
@@ -56,7 +56,8 @@ describe('Contract parser', function () {
       const parser = new ContractParser({ nod3 })
       const tokenAddress = '0xebea27d994371cd0cb9896ae4c926bc5221f6317'
       const contract = parser.makeContract(tokenAddress)
-      const tokenData = await parser.getTokenData(contract)
+      const blockNumber = 6186626
+      const tokenData = await parser.getDefaultTokenData(contract, blockNumber)
 
       if (tokenData.totalSupply) {
         tokenData.totalSupply = BigInt(tokenData.totalSupply)
@@ -188,7 +189,7 @@ describe('Contract parser', function () {
 
       const parser = new ContractParser({ nod3, abi: HEROV6.abi })
       const contract = parser.makeContract(HEROV6.address)
-      const result = await contract.call('hero')
+      const result = await contract.call('hero', [], { blockNumber: 'latest' })
       expect(result).to.equal('0xFEC90a97eeB211c0b15c4bb617ab24bCAd5106CF')
     })
   })

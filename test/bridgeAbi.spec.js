@@ -4,7 +4,8 @@ import wasabi from '../src/lib/nativeContracts/bridge-wasabi.json'
 import iris from '../src/lib/nativeContracts/bridge-iris.json'
 import fingerroot from '../src/lib/nativeContracts/bridge-fingerroot.json'
 import hop from '../src/lib/nativeContracts/bridge-hop.json'
-import { getBridgeAbi, RELEASES } from '../src/lib/nativeContracts/bridgeAbi'
+import lovell from '../src/lib/nativeContracts/bridge-lovell.json'
+import { getBridgeAbiByBlockNumber, RELEASES } from '../src/lib/nativeContracts/bridgeAbi'
 
 /*
   mainnet: {
@@ -13,14 +14,16 @@ import { getBridgeAbi, RELEASES } from '../src/lib/nativeContracts/bridgeAbi'
     2392700: papyrus,
     3614800: iris,
     4598500: hop,
-    5468000: fingerroot
+    5468000: fingerroot,
+    7338024: lovell
   },
   testnet: {
     0: wasabi,
     863000: papyrus,
     2060500: iris,
     3103000: hop,
-    4015800: fingerroot
+    4015800: fingerroot,
+    6110487: lovell
   }
 */
 
@@ -46,32 +49,41 @@ describe('getBridgeAbi(txBlockNumber, bitcoinNetwork) should return the correct 
     { height: 0, abi: orchid, name: 'orchid' },
     { height: 1, abi: orchid, name: 'orchid' },
     { height: 3614801, abi: iris, name: 'iris' },
-    { height: 5468005, abi: fingerroot, name: 'fingerroot' }
+    { height: 5468005, abi: fingerroot, name: 'fingerroot' },
+    { height: 7338024, abi: lovell, name: 'lovell' }
   ]
   const testnetTestExpectatins = [
     { height: 0, abi: wasabi, name: 'wasabi' },
     { height: 1, abi: wasabi, name: 'wasabi' },
-    { height: 3103001, abi: hop, name: 'hop' }
+    { height: 3103001, abi: hop, name: 'hop' },
+    { height: 6110487, abi: lovell, name: 'lovell' }
   ]
 
   for (const { height, abi, name } of mainnetTestExpectations) {
-    const params = { txBlockNumber: height, bitcoinNetwork: 'mainnet' }
-
-    it(`Should return ${name} abi for height ${height} in ${params.bitcoinNetwork}`, () => {
-      expect(getBridgeAbi(params)).to.be.deep.equal(abi)
+    it(`Should return ${name} abi for height ${height} in mainnet`, () => {
+      expect(getBridgeAbiByBlockNumber(height, 'mainnet')).to.be.deep.equal(abi)
     })
   }
 
   for (const { height, abi, name } of testnetTestExpectatins) {
-    const params = { txBlockNumber: height, bitcoinNetwork: 'testnet' }
-
-    it(`Should return ${name} abi for height ${height} in ${params.bitcoinNetwork}`, () => {
-      expect(getBridgeAbi(params)).to.be.deep.equal(abi)
+    it(`Should return ${name} abi for height ${height} in testnet`, () => {
+      expect(getBridgeAbiByBlockNumber(height, 'testnet')).to.be.deep.equal(abi)
     })
   }
 
   it('Should throw an error with a non existent bitcoin network', () => {
-    const getAbi = () => getBridgeAbi({ txBlockNumber: 3003, bitcoinNetwork: 'wondernet' })
-    expect(getAbi).to.throw()
+    expect(() => getBridgeAbiByBlockNumber(3003, 'wondernet')).to.throw()
+  })
+
+  it('Should return the latest bridge ABI for block tag "latest"', () => {
+    expect(getBridgeAbiByBlockNumber('latest', 'mainnet')).to.deep.equal(mainnetTestExpectations[mainnetTestExpectations.length - 1].abi)
+    expect(getBridgeAbiByBlockNumber('latest', 'testnet')).to.deep.equal(testnetTestExpectatins[testnetTestExpectatins.length - 1].abi)
+  })
+
+  it('Should throw an error when block number is not either a number or block tag "latest"', () => {
+    expect(() => getBridgeAbiByBlockNumber('not a number', 'mainnet')).to.throw()
+    expect(() => getBridgeAbiByBlockNumber([], 'mainnet')).to.throw()
+    expect(() => getBridgeAbiByBlockNumber({}, 'mainnet')).to.throw()
+    expect(() => getBridgeAbiByBlockNumber(true, 'mainnet')).to.throw()
   })
 })

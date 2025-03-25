@@ -1,6 +1,6 @@
-import { assert } from 'chai'
+import { expect } from 'chai'
 import { ContractParser } from '../src/lib/ContractParser'
-import nod3 from '../src/lib/nod3Connect'
+import { nod3Connect } from '../src/lib/nod3Connect'
 
 const addresses = {
   '0xebea27d994371cd0cb9896ae4c926bc5221f6317': ['ERC20'],
@@ -11,24 +11,23 @@ const addresses = {
   '0x7974f2971e0b5d68f30513615fafec5c451da4d1': ['ERC20', 'ERC677']
 }
 
+const nod3 = nod3Connect('http://localhost:4444')
+
 const parser = new ContractParser({ nod3 })
 
 describe('# Network', function () {
   it('should be connected to RSK testnet', async function () {
     const net = await nod3.net.version()
-    console.log(net)
-    assert.equal(net.id, '31')
+    expect(net.id).to.be.equal('31')
   })
 })
 
 describe('# Interfaces detection', function () {
   for (const address in addresses) {
     this.timeout(60000)
-    it(`${address}: ${addresses[address]}`, async function () {
-      const contract = parser.makeContract(address)
-      const info = await parser.getContractMethodsAndERCInterfaces(address, contract)
-      const { interfaces } = info
-      assert.includeMembers(interfaces, addresses[address])
+    it(`${address} should have the following interfaces: ${addresses[address]}`, async function () {
+      const { interfaces } = await parser.getContractMethodsAndERCInterfaces(address)
+      expect(interfaces).to.include.members(addresses[address])
     })
   }
 })

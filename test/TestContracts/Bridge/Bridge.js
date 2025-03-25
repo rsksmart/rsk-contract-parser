@@ -1,14 +1,14 @@
-import { getBridgeAbi, getBridgeAddress, getBridgeMethods } from '../../../src/lib/utils'
+import { getLatestBridgeAbi, getBridgeAddress, getLatestBridgeMethods } from '../../../src/lib/utils'
 
 export const Bridge = {
-  abi: getBridgeAbi(),
+  abi: getLatestBridgeAbi(),
   bytecode: '0x',
   network: 'testnet',
   name: 'Bridge',
   address: getBridgeAddress(),
-  unverifiedMethods: getBridgeMethods(),
+  unverifiedMethods: getLatestBridgeMethods(),
   unverifiedInterfaces: [],
-  verifiedMethods: getBridgeMethods(),
+  verifiedMethods: getLatestBridgeMethods(),
   verifiedInterfaces: [],
   proxyDetails: {
     isProxy: false,
