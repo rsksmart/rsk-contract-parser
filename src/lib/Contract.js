@@ -92,23 +92,35 @@ export default class Contract {
 
   /**
    * Makes a call to a contract method.
-   * @param {FunctionFragment | string} methodName - The method to call. Can be the method name or a FunctionFragment for more precise method selection
+   * @param {FunctionFragment | string} method - The method to call. Can be the method name or a FunctionFragment for more precise method selection
    * @param {Array} params - The parameters for the method call
-   * @param {Object} txData - Additional transaction data
+   * @param {Object} options - The options for the call
+   * @param {Object} [options.txData] - The transaction data for the call
+   * @param {number | string} [options.blockNumber] - The specific block number to use for the call. Can be a block number or a tag. Defaults to tag 'latest'.
    * @returns {Promise<*>} A promise that resolves to the call result
-   * @throws {Error} If nod3 is not set, address is not defined, or params is not an array
    */
-  async call (method, params = [], txData = {}) {
+  async call (method, params = [], options = { txData: {}, blockNumber: 'latest' }) {
     try {
       if (!this.nod3) throw new Error('Set nod3 instance before call')
       if (!this.address) throw new Error('The contract address is not defined')
       if (!Array.isArray(params)) throw new Error('Params must be an array')
+      if (options.blockNumber !== 'latest') {
+        const number = parseInt(options.blockNumber)
+        if (isNaN(number)) throw new Error('Invalid block number')
+        options.blockNumber = `0x${number.toString(16)}`
+      }
 
-      const data = this.encodeCall(method, params)
-      const to = this.address
-      const tx = Object.assign(txData, { to, data })
-      const result = await this.nod3.eth.call(tx)
-      return this.decodeCall(method, result)
+      const tx = {
+        ...options.txData,
+        to: this.address,
+        data: this.encodeCall(method, params)
+      }
+
+      const result = await this.nod3.eth.call(tx, options.blockNumber)
+
+      const decodedResult = this.decodeCall(method, result)
+
+      return decodedResult
     } catch (err) {
       return Promise.reject(err)
     }

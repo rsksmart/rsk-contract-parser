@@ -4,7 +4,7 @@ import BigNumber from 'bignumber.js'
 import { bridge } from '@rsksmart/rsk-precompiled-abis'
 import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
 
-export const getBridgeAbi = () => {
+export const getLatestBridgeAbi = () => {
   try {
     if (!bridge || !bridge.abi || !Array.isArray(bridge.abi)) throw new Error('Invalid Bridge ABI')
 
@@ -15,9 +15,9 @@ export const getBridgeAbi = () => {
   }
 }
 
-export const getBridgeMethods = () => {
+export const getLatestBridgeMethods = () => {
   try {
-    const bridgeAbi = getBridgeAbi()
+    const bridgeAbi = getLatestBridgeAbi()
     return bridgeAbi.map(solidityName)
   } catch (error) {
     console.error(error)
