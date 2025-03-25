@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { ContractParser } from '../src/lib/ContractParser'
-import { nod3Connect } from '../src/lib/nod3Connect'
+import nod3 from '../src/lib/nod3Connect'
 
 const addresses = {
   '0xebea27d994371cd0cb9896ae4c926bc5221f6317': ['ERC20'],
@@ -10,8 +10,6 @@ const addresses = {
   '0xe59f2877a51e570fbf751a07d50899838e6b6cc7': ['ERC721'],
   '0x7974f2971e0b5d68f30513615fafec5c451da4d1': ['ERC20', 'ERC677']
 }
-
-const nod3 = nod3Connect('http://localhost:4444')
 
 const parser = new ContractParser({ nod3 })
 
