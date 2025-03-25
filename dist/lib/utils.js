@@ -1,10 +1,10 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.addSignatureDataToAbi = exports.abiSignatureData = exports.abiMethods = exports.abiEvents = void 0;exports.binarySearchNumber = binarySearchNumber;exports.erc165IdFromMethods = exports.erc165Id = void 0;exports.filterEvents = filterEvents;exports.formatAddressFromSlot = formatAddressFromSlot;exports.getSignatureDataFromAbi = exports.getInputsIndexes = exports.getBridgeMethods = exports.getBridgeAddress = exports.getBridgeAbi = void 0;exports.notZero = notZero;exports.soliditySignature = exports.soliditySelector = exports.solidityName = exports.setAbi = exports.removeAbiSignatureData = exports.processInputType = void 0;exports.toHex = toHex;var _rskUtils = require("@rsksmart/rsk-utils");
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.addSignatureDataToAbi = exports.abiSignatureData = exports.abiMethods = exports.abiEvents = void 0;exports.binarySearchNumber = binarySearchNumber;exports.erc165IdFromMethods = exports.erc165Id = void 0;exports.filterEvents = filterEvents;exports.formatAddressFromSlot = formatAddressFromSlot;exports.getSignatureDataFromAbi = exports.getLatestBridgeMethods = exports.getLatestBridgeAbi = exports.getInputsIndexes = exports.getBridgeAddress = void 0;exports.notZero = notZero;exports.soliditySignature = exports.soliditySelector = exports.solidityName = exports.setAbi = exports.removeAbiSignatureData = exports.processInputType = void 0;exports.toHex = toHex;var _rskUtils = require("@rsksmart/rsk-utils");
 var _types = require("./types");
 var _bignumber = _interopRequireDefault(require("bignumber.js"));
 var _rskPrecompiledAbis = require("@rsksmart/rsk-precompiled-abis");
 var _addresses = require("@rsksmart/rsk-utils/dist/addresses");function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 
-const getBridgeAbi = () => {
+const getLatestBridgeAbi = () => {
   try {
     if (!_rskPrecompiledAbis.bridge || !_rskPrecompiledAbis.bridge.abi || !Array.isArray(_rskPrecompiledAbis.bridge.abi)) throw new Error('Invalid Bridge ABI');
 
@@ -13,17 +13,17 @@ const getBridgeAbi = () => {
     console.error(error);
     return [];
   }
-};exports.getBridgeAbi = getBridgeAbi;
+};exports.getLatestBridgeAbi = getLatestBridgeAbi;
 
-const getBridgeMethods = () => {
+const getLatestBridgeMethods = () => {
   try {
-    const bridgeAbi = getBridgeAbi();
+    const bridgeAbi = getLatestBridgeAbi();
     return bridgeAbi.map(solidityName);
   } catch (error) {
     console.error(error);
     return [];
   }
-};exports.getBridgeMethods = getBridgeMethods;
+};exports.getLatestBridgeMethods = getLatestBridgeMethods;
 
 const getBridgeAddress = () => {
   try {

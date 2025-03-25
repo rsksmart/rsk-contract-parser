@@ -5,6 +5,7 @@ var _NativeContracts = _interopRequireDefault(require("./nativeContracts/NativeC
 var _Contract = _interopRequireDefault(require("./Contract"));
 var _EventDecoder = _interopRequireDefault(require("./EventDecoder"));
 var _Abi = _interopRequireDefault(require("./Abi"));
+var _ERC1967Beacon = _interopRequireDefault(require("./jsonAbis/ERC1967Beacon.json"));
 var _types = require("./types");
 
 
@@ -45,7 +46,7 @@ class ContractParser {
    * @param {Object} [options.initConfig.net] - Network configuration information
    * @param {string|number} [options.initConfig.net.id] - Network ID used to determine RSK/Bitcoin network
    * @param {Nod3} [options.nod3] - Nod3 instance for making blockchain calls
-   * @param {number} [options.txBlockNumber] - Transaction's block number for accurate event decoding
+   * @param {number | string} [options.txBlockNumber] - Transaction's block number for accurate event decoding. Can be a block number or a tag. Defaults to tag 'latest'.
    */
   constructor({ abi, log, initConfig, nod3, txBlockNumber } = {}) {
     initConfig = initConfig || {};
@@ -161,7 +162,7 @@ class ContractParser {
   }
 
   /**
-   * Parses transaction logs and returns decoded events.
+   * Parses transaction logs and returns decoded events. Also handles native contract events.
    * @param {Array} logs - The transaction logs to parse
    * @returns {Array} An array of decoded events
    */
@@ -205,7 +206,7 @@ class ContractParser {
   }
 
   /**
-   * Decodes transaction logs and returns decoded events.
+   * Decodes transaction logs and returns decoded events. Also handles native contract events.
    * @param {Array} logs - The transaction logs to decode
    * @returns {Array} An array of decoded events
    */
@@ -234,20 +235,23 @@ class ContractParser {
   }
 
   /**
-   * Calls a method on a contract
-   * @param {FunctionFragment | string} method - The method to call
+   * Calls a method on a specific contract
    * @param {Contract} contract - The contract object
+   * @param {FunctionFragment | string} method - The method to call
    * @param {Array} [params] - The parameters to pass to the method
    * @param {Object} [options] - The options for the call
+   * @param {Object} [options.txData] - The transaction data for the call
+   * @param {number | string} [options.blockNumber] - The specific block number to use for the call. Can be a block number or a tag. Defaults to tag 'latest'.
    * @returns {Promise<* | null>} The result of the call
    */
-  async call(method, contract, params = [], options = {}) {
+  async call(contract, method, params = [], options = { txData: {}, blockNumber: 'latest' }) {
     try {
       const res = await contract.call(method, params, options);
       return res;
     } catch (err) {
-      this.log.trace(`Error calling contract ${contract.getAddress()}: ${err}`);
-      this.log.trace(err);
+      // avoid spamming the console with errors
+      // this.log.debug(`Error calling contract ${contract.getAddress()}: ${err}`)
+      // this.log.debug(err)
       return null;
     }
   }
@@ -255,19 +259,25 @@ class ContractParser {
   /**
    * Retrieves token data from a contract
    * @param {Contract} contract - The contract object
-   * @param {Object} [options] - The options for the token data retrieval
+   * @param {number | string} [blockNumber] - The specific block number to use for the call. Can be a block number or a tag. Defaults to tag 'latest'.
    * @returns {Promise<Object>} The token data
    */
-  async getTokenData(contract, { methods } = {}) {
-    methods = methods || ['name', 'symbol', 'decimals', 'totalSupply'];
+  async getDefaultTokenData(contract, blockNumber = 'latest') {
+    const defaultTokenMethods = [
+    'name',
+    'symbol',
+    'decimals',
+    'totalSupply'];
+
+
     const result = await Promise.all(
-      methods.map((m) =>
-      this.call(m, contract).
-      then((res) => res).
-      catch((err) => this.log.trace(`[Contract: ${contract.getAddress()}] Error executing ${m}  Error: ${err}`)))
+      defaultTokenMethods.map((method) =>
+      this.call(contract, method, [], { blockNumber }).
+      then((res) => res)
+      )
     );
     return result.reduce((v, a, i) => {
-      const name = methods[i];
+      const name = defaultTokenMethods[i];
       v[name] = a;
       return v;
     }, {});
@@ -313,13 +323,13 @@ class ContractParser {
    * Uses the current set ABI to inspect the contract bytecode and validate methods and interfaces.
    * If a block number is provided, bytecode used to validate methods and interfaces will be retrieved from the node at the given block number.
    * @param {string} address - The contract address
-   * @param {number?} [blockNumber] - Optional. Use this param to retrieve methods and interfaces for a specific block. Defaults to 'latest'.
+   * @param {number | string} [blockNumber] - Optional. Retrieve methods and interfaces at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
    * @returns {Promise<{
    *   methods: string[],
    *   interfaces: string[]
    * }>} The contract methods and ERC interfaces
    */
-  async getContractMethodsAndERCInterfaces(address, blockNumber) {
+  async getContractMethodsAndERCInterfaces(address, blockNumber = 'latest') {
     const contractByteCode = await this.getContractCodeFromNode(address, blockNumber);
     const methods = this.getMethodsFromContractByteCode(contractByteCode);
     const interfaces = this.getInterfacesByMethods(methods);
@@ -358,7 +368,7 @@ class ContractParser {
 
     // Native contracts check - Bridge
     if (this.nativeContracts.isNativeContract(contractAddress)) {
-      contractDetails.methods = (0, _utils.getBridgeMethods)();
+      contractDetails.methods = (0, _utils.getLatestBridgeMethods)();
       return contractDetails;
     }
 
@@ -367,13 +377,13 @@ class ContractParser {
       const ERC1967ProxyDetails = await this.isERC1967Proxy(contractAddress, blockNumber);
       if (ERC1967ProxyDetails.isProxy) {
         contractDetails.isProxy = true;
+        contractDetails.implementationAddress = ERC1967ProxyDetails.implementationAddress;
+        contractDetails.beaconAddress = ERC1967ProxyDetails.beaconAddress;
         contractDetails.proxyType = ERC1967ProxyDetails.proxyType;
-        if ((0, _addresses2.isAddress)(ERC1967ProxyDetails.implementationAddress)) {
-          contractDetails.implementationAddress = ERC1967ProxyDetails.implementationAddress;
+        if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
           // Use implementation methods and interfaces. Append proxy standard interfaces
           const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber);
           const proxyInterfaces = [_types.contractsInterfaces.ERC1822, _types.contractsInterfaces.ERC1967];
-
           contractDetails.methods = methods;
           contractDetails.interfaces = [
           ...interfaces,
@@ -386,16 +396,14 @@ class ContractParser {
 
       // Open Zeppelin Unstructured Storage Proxy check
       const OZUnstructuredStorageProxyDetails = await this.isOZUnstructuredStorageProxy(contractAddress, blockNumber);
-
       if (OZUnstructuredStorageProxyDetails.isProxy) {
         contractDetails.isProxy = true;
+        contractDetails.implementationAddress = OZUnstructuredStorageProxyDetails.implementationAddress;
         contractDetails.proxyType = OZUnstructuredStorageProxyDetails.proxyType;
-        if ((0, _addresses2.isAddress)(OZUnstructuredStorageProxyDetails.implementationAddress)) {
-          contractDetails.implementationAddress = OZUnstructuredStorageProxyDetails.implementationAddress;
+        if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
           // Use implementation methods and interfaces. Append proxy standard interfaces
           const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber);
           const proxyInterfaces = [_types.contractsInterfaces.ERC1822];
-
           contractDetails.methods = methods;
           contractDetails.interfaces = [
           ...interfaces,
@@ -476,17 +484,16 @@ class ContractParser {
       try {
         // Get beacon contract address
         const beaconContractAddress = (0, _utils.formatAddressFromSlot)(beaconSlotValue);
-
         if (!(0, _addresses2.isAddress)(beaconContractAddress)) {
           throw new Error('Invalid beacon contract address');
         }
+        result.beaconAddress = beaconContractAddress;
 
         // Create contract instance for the beacon
-        const beaconContract = this.makeContract(beaconContractAddress);
+        const beaconContract = new _Contract.default(_ERC1967Beacon.default, { address: beaconContractAddress, nod3: this.nod3 });
 
         // Get implementation contract address from beacon contract
-        const implementationAddress = await this.call('implementation', beaconContract);
-
+        const implementationAddress = await beaconContract.call('implementation', [], { blockNumber });
         if (!(0, _addresses2.isAddress)(implementationAddress)) {
           throw new Error('Beacon returns an invalid implementation address');
         }
