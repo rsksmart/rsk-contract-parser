@@ -271,11 +271,9 @@ export class ContractParser {
     ]
 
     const result = await Promise.all(
-      defaultTokenMethods.map(method =>
-        this.call(contract, method, [], { blockNumber })
-          .then(res => res)
-      )
+      defaultTokenMethods.map(method => this.call(contract, method, [], { blockNumber }))
     )
+
     return result.reduce((v, a, i) => {
       const name = defaultTokenMethods[i]
       v[name] = a

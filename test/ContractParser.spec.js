@@ -3,7 +3,7 @@ import { ContractParser } from '../src/lib/ContractParser'
 import { nod3Connect } from '../src/lib/nod3Connect'
 import ERC20_ABI from '../src/lib/jsonAbis/ERC20.json'
 import interfacesIds from '../src/lib/interfacesIds'
-import { DEFAULT_TOKEN_METHODS, solidityName } from '../src/lib/utils'
+import { solidityName } from '../src/lib/utils'
 import Contract from '../src/lib/Contract'
 import { Bridge, HEROV6, USDRIF, USDCe } from './TestContracts'
 import { contractsInterfaces, PROXY_TYPES } from '../src/lib/types'
@@ -43,28 +43,74 @@ describe('# Network', function () {
 })
 
 describe('Contract parser', function () {
-  describe('1) getDefaultTokenData()', () => {
-    it(`should return RIF default token data: ${JSON.stringify(DEFAULT_TOKEN_METHODS)}`, async () => {
-      const expectedTokenData = {
-        name: 'RIF Token',
-        symbol: 'RIF',
-        decimals: 0,
-        totalSupply: BigInt('0x2710')
+  describe.only('1) getDefaultTokenData() should return default token data', () => {
+    const fixedTestnetBlockNumber = 6186626
+    const fixedMainnetBlockNumber = 7376491
+    const testCases = [
+      {
+        name: Bridge.name,
+        network: Bridge.network,
+        address: Bridge.address,
+        blockNumber: fixedTestnetBlockNumber,
+        expectedTokenData: {
+          name: null,
+          symbol: null,
+          decimals: null,
+          totalSupply: null
+        }
+      },
+      {
+        name: 'RIF',
+        network: 'testnet',
+        address: '0xebea27d994371cd0cb9896ae4c926bc5221f6317',
+        blockNumber: fixedTestnetBlockNumber,
+        expectedTokenData: {
+          name: 'RIF Token',
+          symbol: 'RIF',
+          decimals: 0,
+          totalSupply: BigInt('0x2710')
+        }
+      },
+      {
+        name: USDCe.name,
+        network: USDCe.network,
+        address: USDCe.address,
+        blockNumber: fixedMainnetBlockNumber,
+        expectedTokenData: {
+          name: 'Bridged USDC (Stargate)',
+          symbol: 'USDC.e',
+          decimals: 6,
+          totalSupply: BigInt('0x6b4d1f90a5')
+        }
+      },
+      {
+        name: USDRIF.name,
+        network: USDRIF.network,
+        address: USDRIF.address,
+        blockNumber: fixedMainnetBlockNumber,
+        expectedTokenData: {
+          name: 'RIF US Dollar',
+          symbol: 'USDRIF',
+          decimals: 18,
+          totalSupply: BigInt('0xde010c07576c45b50bb1')
+        }
       }
+    ]
 
-      const nod3 = getNod3Instance('testnet')
-      const parser = new ContractParser({ nod3 })
-      const tokenAddress = '0xebea27d994371cd0cb9896ae4c926bc5221f6317'
-      const contract = parser.makeContract(tokenAddress)
-      const blockNumber = 6186626
-      const tokenData = await parser.getDefaultTokenData(contract, blockNumber)
+    for (const { name, network, address, blockNumber, expectedTokenData } of testCases) {
+      it(`${address} (${name} - ${network} - Block ${blockNumber})`, async () => {
+        const nod3 = getNod3Instance(network)
+        const parser = new ContractParser({ nod3 })
+        const contract = parser.makeContract(address)
+        const tokenData = await parser.getDefaultTokenData(contract, blockNumber)
 
-      if (tokenData.totalSupply) {
-        tokenData.totalSupply = BigInt(tokenData.totalSupply)
-      }
+        if (tokenData.totalSupply) {
+          tokenData.totalSupply = BigInt(tokenData.totalSupply)
+        }
 
-      expect(tokenData).to.deep.equal(expectedTokenData)
-    })
+        expect(tokenData).to.deep.equal(expectedTokenData)
+      })
+    }
   })
 
   describe('2) getMethodsFromAbi()', () => {

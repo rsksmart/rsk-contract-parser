@@ -104,11 +104,6 @@ export default class Contract {
       if (!this.nod3) throw new Error('Set nod3 instance before call')
       if (!this.address) throw new Error('The contract address is not defined')
       if (!Array.isArray(params)) throw new Error('Params must be an array')
-      if (options.blockNumber !== 'latest') {
-        const number = parseInt(options.blockNumber)
-        if (isNaN(number)) throw new Error('Invalid block number')
-        options.blockNumber = `0x${number.toString(16)}`
-      }
 
       const tx = {
         ...options.txData,
