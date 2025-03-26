@@ -43,7 +43,7 @@ describe('# Network', function () {
 })
 
 describe('Contract parser', function () {
-  describe.only('1) getDefaultTokenData() should return default token data', () => {
+  describe('1) getDefaultTokenData() should return default token data', () => {
     const fixedTestnetBlockNumber = 6186626
     const fixedMainnetBlockNumber = 7376491
     const testCases = [
