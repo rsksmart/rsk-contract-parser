@@ -1,16 +1,17 @@
 import { ContractParser } from './lib/ContractParser'
 import { BcSearch } from './lib/BcSearch'
 import Contract from './lib/Contract'
-import { getBridgeAbiByBlockNumber } from './lib/nativeContracts/bridgeAbi'
+import { getRskReleaseByBlockNumber, RSK_RELEASES } from './lib/nativeContracts/bridgeAbi'
 import { getLatestBridgeAbi, getLatestBridgeMethods } from './lib/utils'
 
 export {
   ContractParser,
   Contract,
   BcSearch,
-  getBridgeAbiByBlockNumber,
+  getRskReleaseByBlockNumber,
   getLatestBridgeAbi,
-  getLatestBridgeMethods
+  getLatestBridgeMethods,
+  RSK_RELEASES
 }
 
 export default ContractParser

@@ -5,7 +5,8 @@ var _utils = require("../utils");function _interopRequireDefault(e) {return e &&
 
 function NativeContractsEventDecoder({ bitcoinNetwork, txBlockNumber }) {
   const nativeDecoder = (0, _NativeContractsEvents.default)({ bitcoinNetwork });
-  const ABI = (0, _utils.addSignatureDataToAbi)((0, _bridgeAbi.getBridgeAbiByBlockNumber)(txBlockNumber, bitcoinNetwork));
+  const rskRelease = (0, _bridgeAbi.getRskReleaseByBlockNumber)(txBlockNumber, bitcoinNetwork);
+  const ABI = (0, _utils.addSignatureDataToAbi)(rskRelease.abi);
   const solidityDecoder = (0, _EventDecoder.default)(ABI);
 
   const getEventDecoder = (log) => {
