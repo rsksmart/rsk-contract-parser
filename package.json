@@ -1,14 +1,14 @@
 {
   "name": "@rsksmart/rsk-contract-parser",
-  "version": "1.0.4",
-  "description": "",
+  "version": "2.0.0",
+  "description": "A tool to parse/interact with contracts and decode events from the Rootstock blockchain.",
   "main": "dist/index.js",
   "scripts": {
     "lint": "npx eslint src/**/*.js test/**/*.js",
     "test": "npx mocha",
     "test:local": "npx mocha test/compiler.spec.js test/events.spec.js test/nativeContracts.spec.js test/bridgeAbi.spec.js",
     "build": "npm run lint && npx babel src -d dist --copy-files",
-    "abi": "npx babel-node --presets  @babel/preset-env src/lib/compileJsonAbis.js"
+    "abi": "npx babel-node --presets @babel/preset-env src/lib/compileJsonAbis.js"
   },
   "repository": {
     "type": "git",
@@ -16,9 +16,13 @@
   },
   "keywords": [
     "rsk",
+    "rootstock",
     "blockchain",
     "events",
-    "token"
+    "token",
+    "abi",
+    "contract",
+    "parser"
   ],
   "author": "emi",
   "license": "MIT",
