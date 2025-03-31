@@ -11588,6 +11588,27 @@
   },
   {
     "constant": true,
+    "inputs": [],
+    "name": "implementation",
+    "outputs": [
+      {
+        "name": "implementation",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function",
+    "__signatureData": {
+      "method": "implementation()",
+      "signature": "5c60da1b04210c25e1974b6edfcf5bb7c7365b6a88c42319fcbd024464075cc2",
+      "index": [],
+      "indexed": 0,
+      "eventSignature": null
+    }
+  },
+  {
+    "constant": true,
     "inputs": [
       {
         "name": "interfaceID",
