@@ -2,6 +2,7 @@ import { assert } from 'chai'
 import { ContractParser } from '../src/lib/ContractParser'
 import { isAddress } from '@rsksmart/rsk-utils'
 import txs from './txs/'
+import { createRskNodeProvider } from '../src'
 
 const initConfig = {
   nativeContracts: {
@@ -12,11 +13,12 @@ const initConfig = {
 
 describe('# decode events', function () {
   this.timeout(9000)
+  const nod3 = createRskNodeProvider('testnet')
   for (const t of txs) {
     const id = t.netId || 31
     initConfig.net = { id }
     const { abi, tx } = t
-    const parser = new ContractParser({ initConfig, abi, txBlockNumber: (parseInt(tx.blockNumber)) })
+    const parser = new ContractParser({ initConfig, abi, txBlockNumber: (parseInt(tx.blockNumber)), nod3 })
     const e = t.expect
     describe(`TX: ${tx.transactionHash}`, function () {
       const decodedLogs = parser.parseTxLogs(tx.logs)

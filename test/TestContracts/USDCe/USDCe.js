@@ -9,7 +9,9 @@ export const USDCe = {
   network: 'mainnet',
   name: 'USDCe',
   address: '0x74c9f2b00581f1b11aa7ff05aa9f608b7389de67',
-  unverifiedMethods: [],
+  unverifiedMethods: [
+    'implementation()'
+  ],
   unverifiedInterfaces: [],
   verifiedMethods: [],
   verifiedInterfaces: [],
