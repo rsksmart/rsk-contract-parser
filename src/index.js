@@ -3,7 +3,7 @@ import { BcSearch } from './lib/BcSearch'
 import Contract from './lib/Contract'
 import { getRskReleaseByBlockNumber, RSK_RELEASES } from './lib/nativeContracts/bridgeAbi'
 import { getLatestBridgeAbi, getLatestBridgeMethods } from './lib/utils'
-
+import { publicRskNodeUrls, createRskNodeProvider } from './lib/nod3Connect'
 export {
   ContractParser,
   Contract,
@@ -11,7 +11,9 @@ export {
   getRskReleaseByBlockNumber,
   getLatestBridgeAbi,
   getLatestBridgeMethods,
-  RSK_RELEASES
+  RSK_RELEASES,
+  publicRskNodeUrls,
+  createRskNodeProvider
 }
 
 export default ContractParser

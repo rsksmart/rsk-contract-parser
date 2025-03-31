@@ -1,6 +1,5 @@
 import { ContractParser } from '../lib/ContractParser'
-import { nod3Connect } from '../lib/nod3Connect'
-
+import { createRskNodeProvider } from '../lib/nod3Connect'
 async function main () {
   const contractAddress = process.argv[2]
   const block = process.argv[3]
@@ -14,10 +13,7 @@ async function main () {
     usage()
   }
 
-  const nod3 = nod3Connect(network === 'mainnet'
-    ? 'https://public-node.rsk.co'
-    : 'https://public-node.testnet.rsk.co'
-  )
+  const nod3 = createRskNodeProvider(network)
 
   const txBlockNumber = isNaN(parseInt(block)) ? block : parseInt(block)
   const contractParser = new ContractParser({ nod3, txBlockNumber })
@@ -27,7 +23,7 @@ async function main () {
 }
 
 function usage () {
-  console.info('Usage: getContractDetails.js <contractAddress> <block> <network (mainnet|testnet)>')
+  console.info('Usage: getContractDetails.js <contractAddress> <block (number|"latest")> <network (mainnet|testnet)>')
   console.info('Example (USDCe at block 7363973 on mainnet):')
   console.info('node dist/tools/getContractDetails.js 0x74c9f2b00581f1b11aa7ff05aa9f608b7389de67 7363973 mainnet')
   process.exit(1)

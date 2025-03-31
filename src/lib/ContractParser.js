@@ -45,15 +45,18 @@ export class ContractParser {
    * @param {Object} [options.initConfig] - Initial configuration object
    * @param {Object} [options.initConfig.net] - Network configuration information
    * @param {string|number} [options.initConfig.net.id] - Network ID used to determine RSK/Bitcoin network
-   * @param {Nod3} [options.nod3] - Nod3 instance for making blockchain calls
+   * @param {Nod3} options.nod3 - Nod3 instance for making blockchain calls. Required for most functionality including contract analysis, proxy detection, and event decoding.
    * @param {number | string} [options.txBlockNumber] - Transaction's block number for accurate event decoding. Can be a block number or a tag. Defaults to tag 'latest'.
    */
-  constructor ({ abi, log, initConfig, nod3, txBlockNumber } = {}) {
+  constructor ({ abi, log, initConfig, nod3, txBlockNumber = 'latest' } = {}) {
     initConfig = initConfig || {}
     const { net } = initConfig
     this.netId = (net) ? net.id : undefined
     this.abi = setAbi(abi || defaultABI)
     this.log = log || console
+
+    if (!nod3) throw new Error('Nod3 instance is required for ContractParser initialization')
+
     this.nod3 = nod3
     this.nativeContracts = NativeContracts(initConfig)
     if (this.netId) {
