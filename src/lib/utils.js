@@ -1,6 +1,5 @@
 import { keccak256, add0x } from '@rsksmart/rsk-utils'
 import { ABI_SIGNATURE, INTERFACE_ID_BYTES } from './types'
-import BigNumber from 'bignumber.js'
 import { bridge } from '@rsksmart/rsk-precompiled-abis'
 import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
 
@@ -178,7 +177,7 @@ export async function binarySearchNumber (searchCb, high, low) {
 
 export function notZero (value) {
   if (typeof value === 'string' && /^0x[0-9a-f]*$/i.test(value)) {
-    return !BigNumber(value).isZero()
+    return BigInt(value) !== BigInt(0)
   }
 
   return false

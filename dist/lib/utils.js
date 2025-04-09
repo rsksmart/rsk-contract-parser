@@ -1,8 +1,7 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.addSignatureDataToAbi = exports.abiSignatureData = exports.abiMethods = exports.abiEvents = void 0;exports.binarySearchNumber = binarySearchNumber;exports.erc165IdFromMethods = exports.erc165Id = void 0;exports.filterEvents = filterEvents;exports.formatAddressFromSlot = formatAddressFromSlot;exports.getSignatureDataFromAbi = exports.getLatestBridgeMethods = exports.getLatestBridgeAbi = exports.getInputsIndexes = exports.getBridgeAddress = void 0;exports.notZero = notZero;exports.soliditySignature = exports.soliditySelector = exports.solidityName = exports.setAbi = exports.removeAbiSignatureData = exports.processInputType = void 0;exports.toHex = toHex;var _rskUtils = require("@rsksmart/rsk-utils");
 var _types = require("./types");
-var _bignumber = _interopRequireDefault(require("bignumber.js"));
 var _rskPrecompiledAbis = require("@rsksmart/rsk-precompiled-abis");
-var _addresses = require("@rsksmart/rsk-utils/dist/addresses");function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
+var _addresses = require("@rsksmart/rsk-utils/dist/addresses");
 
 const getLatestBridgeAbi = () => {
   try {
@@ -178,7 +177,7 @@ async function binarySearchNumber(searchCb, high, low) {
 
 function notZero(value) {
   if (typeof value === 'string' && /^0x[0-9a-f]*$/i.test(value)) {
-    return !(0, _bignumber.default)(value).isZero();
+    return BigInt(value) !== BigInt(0);
   }
 
   return false;
