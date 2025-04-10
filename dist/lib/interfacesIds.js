@@ -1,6 +1,9 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.interfacesIds = exports.default = void 0;var _utils = require("./utils");
 
 const erc20methods = [
+'name()',
+'symbol()',
+'decimals()',
 'totalSupply()',
 'balanceOf(address)',
 'allowance(address,address)',
@@ -44,7 +47,7 @@ const interfacesIds = exports.interfacesIds = {
 };
 
 function makeInterface(methods) {
-  let id = (0, _utils.erc165IdFromMethods)(methods);
+  const id = (0, _utils.erc165IdFromMethods)(methods);
   return { methods, id };
 }var _default = exports.default =
 

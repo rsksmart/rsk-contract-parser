@@ -1,6 +1,6 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.NativeContractsEvents = NativeContractsEvents;exports.default = void 0;var _rskUtils = require("@rsksmart/rsk-utils");
 var _utils = require("../utils");
-var _FakeABI = _interopRequireDefault(require("./FakeABI"));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _FakeABI = _interopRequireDefault(require("./FakeABI"));function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 function NativeContractsEvents({ bitcoinNetwork } = {}) {
   const network = bitcoinNetwork || 'testnet';
   const fakeAbi = (0, _FakeABI.default)(network);
@@ -32,7 +32,7 @@ function NativeContractsEvents({ bitcoinNetwork } = {}) {
   };
 
   const decodeInput = (input, value) => {
-    let { type, _filter } = input;
+    const { type, _filter } = input;
     if (_filter && typeof _filter === 'function') {
       value = _filter(value);
     }
@@ -41,7 +41,7 @@ function NativeContractsEvents({ bitcoinNetwork } = {}) {
 
   const removeCustomProperties = (obj) => {
     const res = Object.assign({}, obj);
-    for (let p in res) {
+    for (const p in res) {
       if (p[0] === '_') delete res[p];
     }
     return res;
@@ -49,15 +49,15 @@ function NativeContractsEvents({ bitcoinNetwork } = {}) {
 
   const cleanAbi = (abi) => {
     abi = removeCustomProperties(abi);
-    let { inputs } = abi;
+    const { inputs } = abi;
     if (Array.isArray(inputs)) abi.inputs = inputs.map((input) => removeCustomProperties(input));
     return abi;
   };
 
   const decodeLog = (log) => {
-    let topics = [...log.topics];
-    let event = decodeEventName(topics.shift());
-    let abi = getEventAbi(event);
+    const topics = [...log.topics];
+    const event = decodeEventName(topics.shift());
+    const abi = getEventAbi(event);
     if (event && abi) {
       const { signature } = (0, _utils.getSignatureDataFromAbi)(abi);
       log.event = event;
@@ -67,11 +67,11 @@ function NativeContractsEvents({ bitcoinNetwork } = {}) {
       const decoder = abi._decoder || decodeData;
       let dataDecoded = decoder(log.data);
       if (!Array.isArray(dataDecoded)) dataDecoded = [dataDecoded];
-      for (let i in abi.inputs) {
-        let input = abi.inputs[i];
-        let { indexed } = input;
-        let value = indexed === true ? topics[i] : dataDecoded[i - topics.length];
-        let decoded = decodeInput(input, value);
+      for (const i in abi.inputs) {
+        const input = abi.inputs[i];
+        const { indexed } = input;
+        const value = indexed === true ? topics[i] : dataDecoded[i - topics.length];
+        const decoded = decodeInput(input, value);
         if (decoded) log.args.push(decoded);
       }
     }

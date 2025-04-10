@@ -1,6 +1,9 @@
 import { erc165IdFromMethods } from './utils'
 
 const erc20methods = [
+  'name()',
+  'symbol()',
+  'decimals()',
   'totalSupply()',
   'balanceOf(address)',
   'allowance(address,address)',
@@ -44,7 +47,7 @@ export const interfacesIds = {
 }
 
 function makeInterface (methods) {
-  let id = erc165IdFromMethods(methods)
+  const id = erc165IdFromMethods(methods)
   return { methods, id }
 }
 

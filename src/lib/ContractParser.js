@@ -5,44 +5,100 @@ import NativeContracts from './nativeContracts/NativeContracts'
 import Contract from './Contract'
 import EventDecoder from './EventDecoder'
 import defaultABI from './Abi'
-import { ABI_SIGNATURE, bitcoinRskNetWorks, contractsInterfaces } from './types'
+import ERC1967BeaconABI from './jsonAbis/ERC1967Beacon.json'
+import {
+  ABI_SIGNATURE,
+  bitcoinRskNetWorks,
+  contractsInterfaces,
+  PROXY_TYPES
+} from './types'
 import {
   setAbi,
   removeAbiSignatureData,
   abiSignatureData,
   soliditySelector,
-  soliditySignature
+  soliditySignature,
+  formatAddressFromSlot,
+  notZero,
+  toHex,
+  getLatestBridgeMethods
 } from './utils'
+import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
 
-function mapInterfacesToERCs (interfaces) {
-  return Object.keys(interfaces)
-    .filter(k => interfaces[k] === true)
-    .map(t => contractsInterfaces[t] || t)
-}
-
-function hasMethodSelector (txInputData, selector) {
-  return selector && txInputData && txInputData.includes(selector)
-}
-
+/**
+ * The ContractParser class handles the analysis and interpretation of Ethereum smart contracts.
+ *
+ * This class provides comprehensive functionality for working with contract ABIs,
+ * transaction data, and event logs in blockchain networks. It enables:
+ *
+ * - Decoding of contract method calls and event signatures
+ * - Identification of implemented interfaces (ERC standards)
+ * - Analysis of proxy patterns with implementation resolution
+ * - Processing of native contract events specific to RSK networks
+ */
 export class ContractParser {
-  constructor ({ abi, log, initConfig, nod3, txBlockNumber } = {}) {
+  /**
+   * Creates a new ContractParser instance.
+   * @param {Object} options - Configuration options
+   * @param {Array} [options.abi] - The Application Binary Interface (ABI) used for decoding. If not provided, a default ABI is used, however its strongly recommended to provide the full ABI.
+   * @param {Object} [options.log=console] - Logging mechanism to use for error and debug messages
+   * @param {Object} [options.initConfig] - Initial configuration object
+   * @param {Object} [options.initConfig.net] - Network configuration information
+   * @param {string|number} [options.initConfig.net.id] - Network ID used to determine RSK/Bitcoin network
+   * @param {Nod3} options.nod3 - Nod3 instance for making blockchain calls. Required for most functionality including contract analysis, proxy detection, and event decoding.
+   * @param {number | string} [options.txBlockNumber] - Transaction's block number for accurate event decoding. Can be a block number or a tag. Defaults to tag 'latest'.
+   */
+  constructor ({ abi, log, initConfig, nod3, txBlockNumber = 'latest' } = {}) {
     initConfig = initConfig || {}
     const { net } = initConfig
     this.netId = (net) ? net.id : undefined
     this.abi = setAbi(abi || defaultABI)
     this.log = log || console
+
+    if (!nod3) throw new Error('Nod3 instance is required for ContractParser initialization')
+
     this.nod3 = nod3
     this.nativeContracts = NativeContracts(initConfig)
     if (this.netId) {
-      let bitcoinNetwork = bitcoinRskNetWorks[this.netId]
+      const bitcoinNetwork = bitcoinRskNetWorks[this.netId]
       this.nativeContractsEvents = NativeContractsDecoder({ bitcoinNetwork, txBlockNumber })
     }
   }
 
+  /**
+   * Retrieves the methods from the ABI.
+   * @param {Array} abi - The ABI to use for decoding
+   * @param {boolean} [addAbiSignatureData=false] - Whether to add the ABI signature data to the methods (default: false)
+   * @returns {Array} The methods
+   */
+  static getMethodsFromAbi (abi, addAbiSignatureData = false) {
+    const methods = abi
+      .filter(fragment => fragment.type === 'function')
+
+    if (addAbiSignatureData) {
+      return methods.map(method => {
+        const sig = method[ABI_SIGNATURE] || abiSignatureData(method)
+        sig.name = method.name
+        return sig
+      })
+    }
+
+    return methods
+  }
+
+  /**
+   * Sets the Nod3 instance for making blockchain calls.
+   * @param {Nod3} nod3 - Nod3 instance for making blockchain calls
+   */
   setNod3 (nod3) {
     this.nod3 = nod3
   }
 
+  /**
+   * Retrieves the address of a native contract
+   * @param {string} name - The name of the native contract
+   * @returns {string} The address of the native contract
+   */
   getNativeContractAddress (name) {
     const { nativeContracts } = this
     if (nativeContracts) {
@@ -50,51 +106,92 @@ export class ContractParser {
     }
   }
 
-  setAbi (abi) {
-    this.abi = setAbi(abi)
+  /**
+   * Retrieves the current ABI being used by the ContractParser instance.
+   * @returns {Array} The ABI
+   */
+  getAbi () {
+    return this.abi
   }
 
+  /**
+   * Sets the ABI for the ContractParser instance.
+   * @param {Array} abi - The Application Binary Interface (ABI). If no ABI is provided, a default ABI will be used.
+   */
+  setAbi (abi) {
+    try {
+      if (!abi) {
+        // If no ABI is provided, use the default ABI
+        this.abi = setAbi(defaultABI)
+        return
+      }
+
+      this.abi = setAbi(abi)
+    } catch (error) {
+      throw new Error(`Error setting ABI: ${error}`)
+    }
+  }
+
+  /**
+   * Retrieves the methods and their selectors from the ABI.
+   */
   getMethodsSelectors () {
-    let selectors = {}
-    let methods = this.getAbiMethods()
-    for (let m in methods) {
-      let method = methods[m]
-      let signature = method.signature || soliditySignature(m)
+    const selectors = {}
+    const methods = this.getAbiMethods()
+
+    for (const m in methods) {
+      const method = methods[m]
+      const signature = method.signature || soliditySignature(m)
       selectors[m] = soliditySelector(signature)
     }
     return selectors
   }
 
+  /**
+   * Retrieves the methods and their signatures from the ABI.
+   */
   getAbiMethods () {
-    let methods = {}
-    this.abi.filter(def => def.type === 'function')
-      .map(m => {
-        let sig = m[ABI_SIGNATURE] || abiSignatureData(m)
+    const methods = {}
+
+    this.abi
+      .filter(def => def.type === 'function')
+      .forEach(m => {
+        const sig = m[ABI_SIGNATURE] || abiSignatureData(m)
         sig.name = m.name
         methods[sig.method] = sig
       })
+
     return methods
   }
 
-  parseTxLogs (logs, abi) {
-    return this.decodeLogs(logs, abi).map(event => {
+  /**
+   * Parses transaction logs and returns decoded events. Also handles native contract events.
+   * @param {Array} logs - The transaction logs to parse
+   * @returns {Array} An array of decoded events
+   */
+  parseTxLogs (logs) {
+    return this.decodeLogs(logs).map(event => {
       this.addEventAddresses(event)
       event.abi = removeAbiSignatureData(event.abi)
       return event
     })
   }
 
+  /**
+   * Adds event addresses to the event object.
+   * @param {Object} event - The event object to add addresses to
+   */
   addEventAddresses (event) {
     const { abi, args } = event
-    let _addresses = event._addresses || []
+    const _addresses = event._addresses || []
     if (abi && args) {
-      let inputs = abi.inputs || []
+      const inputs = abi.inputs || []
       inputs.forEach((v, i) => {
         if (v.type === 'address') {
           _addresses.push(args[i])
         }
         if (v.type === 'address[]') {
-          let value = args[i] || []
+          const value = args[i] || []
           if (Array.isArray(value)) { // temp fix to undecoded events
             value.forEach(v => _addresses.push(v))
           } else {
@@ -111,9 +208,13 @@ export class ContractParser {
     return event
   }
 
-  decodeLogs (logs, abi) {
-    abi = abi || this.abi
-    const eventDecoder = EventDecoder(abi, this.log)
+  /**
+   * Decodes transaction logs and returns decoded events. Also handles native contract events.
+   * @param {Array} logs - The transaction logs to decode
+   * @returns {Array} An array of decoded events
+   */
+  decodeLogs (logs) {
+    const eventDecoder = EventDecoder(this.abi, this.log)
     if (!this.nativeContracts || !this.nativeContractsEvents) {
       throw new Error(`Native contracts decoder is missing, check the value of netId:${this.netId}`)
     }
@@ -126,138 +227,380 @@ export class ContractParser {
     })
   }
 
-  makeContract (address, abi) {
-    abi = abi || this.abi
-    let { nod3 } = this
-    return Contract(abi, { address, nod3 })
+  /**
+   * Creates a contract instance, useful for calling methods on the contract
+   * @param {string} address - The address of the contract
+   * @returns {Contract} A contract instance
+   */
+  makeContract (address) {
+    const { nod3 } = this
+    return new Contract(this.abi, { address, nod3 })
   }
 
-  async call (method, contract, params = [], options = {}) {
+  /**
+   * Calls a method on a specific contract
+   * @param {Contract} contract - The contract object
+   * @param {FunctionFragment | string} method - The method to call
+   * @param {Array} [params] - The parameters to pass to the method
+   * @param {Object} [options] - The options for the call
+   * @param {Object} [options.txData] - The transaction data for the call
+   * @param {number | string} [options.blockNumber] - The specific block number to use for the call. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @returns {Promise<* | null>} The result of the call
+   */
+  async call (contract, method, params = [], options = { txData: {}, blockNumber: 'latest' }) {
     try {
       const res = await contract.call(method, params, options)
       return res
     } catch (err) {
-      // temporary fix to avoid errored contract calls spam logs
-      // this.log.warn(`Method ${method} call ${err}`)
+      // avoid spamming the console with errors
+      // this.log.debug(`Error calling contract ${contract.getAddress()}: ${err}`)
+      // this.log.debug(err)
       return null
     }
   }
 
-  async getTokenData (contract, { methods } = {}) {
-    methods = methods || ['name', 'symbol', 'decimals', 'totalSupply']
-    let result = await Promise.all(
-      methods.map(m =>
-        this.call(m, contract)
-          .then(res => res)
-          .catch(err => this.log.debug(`[${contract.address}] Error executing ${m}  Error: ${err}`)))
+  /**
+   * Retrieves token data from a contract
+   * @param {Contract} contract - The contract object
+   * @param {number | string} [blockNumber] - The specific block number to use for the call. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @returns {Promise<Object>} The token data
+   */
+  async getDefaultTokenData (contract, blockNumber = 'latest') {
+    const defaultTokenMethods = [
+      'name',
+      'symbol',
+      'decimals',
+      'totalSupply'
+    ]
+
+    const result = await Promise.all(
+      defaultTokenMethods.map(method => this.call(contract, method, [], { blockNumber }))
     )
+
     return result.reduce((v, a, i) => {
-      let name = methods[i]
+      const name = defaultTokenMethods[i]
       v[name] = a
       return v
     }, {})
   }
 
-  getMethodsBySelectors (txInputData) {
-    let methods = this.getMethodsSelectors()
+  /**
+   * Maps interfaces to ERCs.
+   * @param {Object} interfaces - The interfaces to map
+   * @returns {Array} The mapped interfaces
+   */
+  mapInterfacesToERCs (interfaces) {
+    return Object.keys(interfaces)
+      .filter(k => interfaces[k] === true)
+      .map(t => contractsInterfaces[t] || t)
+  }
+
+  /**
+   * Checks if a contract bytecode contains a method selector.
+   * @param {string} contractByteCode - The bytecode of the contract
+   * @param {string} selector - The selector to check for
+   * @returns {boolean} True if the selector is found in the contract bytecode, false otherwise
+   */
+  hasMethodSelector (contractByteCode, selector) {
+    return selector && contractByteCode && contractByteCode.includes(selector)
+  }
+
+  /**
+   * Retrieves the methods from the contract bytecode.
+   *
+   * This bytecode is also the txInputData on contract creation transactions.
+   * Note that using the default ABI for methods validation may not be 100% precise. Therefore, it is recommended to set a verified contract ABI and use the `getAbiMethods` method.
+   *
+   * @param {string} contractByteCode - The contract bytecode to analyze.
+   */
+  getMethodsFromContractByteCode (contractByteCode) {
+    const methods = this.getMethodsSelectors()
     return Object.keys(methods)
-      .filter(method => hasMethodSelector(txInputData, methods[method]) === true)
+      .filter(method => this.hasMethodSelector(contractByteCode, methods[method]) === true)
   }
 
-  async getContractInfo (txInputData, contract) {
-    let { interfaces, methods } = await this.getContractImplementedInterfaces(txInputData, contract)
-
-    interfaces = mapInterfacesToERCs(interfaces)
-    return { methods, interfaces }
-  }
-
-  async getEIP1967Info (contractAddress) {
-    const { isUpgradeable, impContractAddress } = await this.isERC1967(contractAddress)
-    if (isUpgradeable) {
-      // manual check required
-      const proxyContractBytecode = await this.getContractCodeFromNode(impContractAddress)
-      const methods = this.getMethodsBySelectors(proxyContractBytecode)
-      let interfaces = this.getInterfacesByMethods(methods)
-
-      interfaces = mapInterfacesToERCs(interfaces)
-      return { methods, interfaces: [...interfaces, 'ERC1967'] }
-    }
-    return {methods: [], interfaces: []}
-  }
-
-  async getContractImplementedInterfaces (txInputData, contract) {
-    let methods = this.getMethodsBySelectors(txInputData)
-    let isErc165 = false
-    //  skip non-erc165 contracts
-    if (includesAll(methods, ['supportsInterface(bytes4)'])) {
-      isErc165 = await this.implementsErc165(contract)
-    }
-    let interfaces
-    if (isErc165) {
-      interfaces = await this.getInterfacesERC165(contract)
-    } else {
-      interfaces = this.getInterfacesByMethods(methods)
-    }
+  /**
+   * Retrieves the contract methods and ERC interfaces
+   * Uses the current set ABI to inspect the contract bytecode and validate methods and interfaces.
+   * If a block number is provided, bytecode used to validate methods and interfaces will be retrieved from the node at the given block number.
+   * @param {string} address - The contract address
+   * @param {number | string} [blockNumber] - Optional. Retrieve methods and interfaces at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @returns {Promise<{
+   *   methods: string[],
+   *   interfaces: string[]
+   * }>} The contract methods and ERC interfaces
+   */
+  async getContractMethodsAndERCInterfaces (address, blockNumber = 'latest') {
+    const contractByteCode = await this.getContractCodeFromNode(address, blockNumber)
+    const methods = this.getMethodsFromContractByteCode(contractByteCode)
+    const interfaces = this.getInterfacesByMethods(methods)
 
     return { methods, interfaces }
   }
 
-  async isERC1967 (contractAddress) {
-    // check For ERC1967
-    // https://eips.ethereum.org/EIPS/eip-1967
-    // 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc storage address where the implementation address is stored
-    const storedValue = await this.nod3.eth.getStorageAt(contractAddress, '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc')
-    const isUpgradeable = storedValue !== '0x0'
-    if (isUpgradeable) {
-      const impContractAddress = `0x${storedValue.slice(-40)}` // extract contract address
-      return { isUpgradeable, impContractAddress }
-    } else {
-      return { isUpgradeable, impContractAddress: storedValue }
+  /**
+   * Retrieves contract details using the current set ABI.
+   * This method also detects if the contract is a proxy.
+   * It is recommended to set the verified ABI of the contract so all methods and interfaces are detected.
+   *
+   * @param {string} contractAddress - The address of the contract
+   * @param {number | string} [blockNumber] - Optional. Retrieve contract details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   *
+   * @returns {Promise<{
+   *   address: string,
+   *   isProxy: boolean,
+   *   implementationAddress: string | null,
+   *   beaconAddress: string | null,
+   *   proxyType: string | null,
+   *   methods: string[],
+   *   interfaces: string[]
+   * }>} The contract details
+   */
+  async getContractDetails (contractAddress, blockNumber = 'latest') {
+    const contractDetails = {
+      address: contractAddress,
+      isProxy: false,
+      implementationAddress: null,
+      beaconAddress: null,
+      proxyType: null,
+      methods: [],
+      interfaces: []
     }
-  }
 
-  async getContractCodeFromNode (contractAddress) {
-    return this.nod3.eth.getContractCodeAt(contractAddress)
-  }
-
-  async getInterfacesERC165 (contract) {
-    let ifaces = {}
-    let keys = Object.keys(interfacesIds)
-    for (let i of keys) {
-      ifaces[i] = await this.supportsInterface(contract, interfacesIds[i].id)
+    // Native contracts check - Bridge
+    if (this.nativeContracts.isNativeContract(contractAddress)) {
+      contractDetails.methods = getLatestBridgeMethods()
+      return contractDetails
     }
-    return ifaces
-  }
 
-  getInterfacesByMethods (methods, isErc165) {
-    return Object.keys(interfacesIds)
-      .map(i => {
-        return [i, includesAll(methods, interfacesIds[i].methods)]
-      })
-      .reduce((obj, value) => {
-        obj[value[0]] = value[1]
-        return obj
-      }, {})
-  }
-
-  async supportsInterface (contract, interfaceId) {
-    // fixed gas to prevent infinite loops
-    let options = { gas: '0x7530' }
-    let res = await this.call('supportsInterface', contract, [interfaceId], options)
-    return res
-  }
-
-  async implementsErc165 (contract) {
     try {
-      let first = await this.supportsInterface(contract, interfacesIds.ERC165.id)
-      if (first === true) {
-        let second = await this.supportsInterface(contract, '0xffffffff')
-        return !(second === true || second === null)
+      // ERC1967 Proxy check
+      const ERC1967ProxyDetails = await this.isERC1967Proxy(contractAddress, blockNumber)
+      if (ERC1967ProxyDetails.isProxy) {
+        contractDetails.isProxy = true
+        contractDetails.implementationAddress = ERC1967ProxyDetails.implementationAddress
+        contractDetails.beaconAddress = ERC1967ProxyDetails.beaconAddress
+        contractDetails.proxyType = ERC1967ProxyDetails.proxyType
+        if (isAddress(contractDetails.implementationAddress)) {
+          // Use implementation methods and interfaces. Append proxy standard interfaces
+          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
+          const proxyInterfaces = [contractsInterfaces.ERC1822, contractsInterfaces.ERC1967]
+          contractDetails.methods = methods
+          contractDetails.interfaces = [
+            ...interfaces,
+            ...proxyInterfaces
+          ]
+        }
+
+        return contractDetails
       }
-      return false
+
+      // Open Zeppelin Unstructured Storage Proxy check
+      const OZUnstructuredStorageProxyDetails = await this.isOZUnstructuredStorageProxy(contractAddress, blockNumber)
+      if (OZUnstructuredStorageProxyDetails.isProxy) {
+        contractDetails.isProxy = true
+        contractDetails.implementationAddress = OZUnstructuredStorageProxyDetails.implementationAddress
+        contractDetails.proxyType = OZUnstructuredStorageProxyDetails.proxyType
+        if (isAddress(contractDetails.implementationAddress)) {
+          // Use implementation methods and interfaces. Append proxy standard interfaces
+          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
+          const proxyInterfaces = [contractsInterfaces.ERC1822]
+          contractDetails.methods = methods
+          contractDetails.interfaces = [
+            ...interfaces,
+            ...proxyInterfaces
+          ]
+        }
+
+        return contractDetails
+      }
+
+      // Normal contracts
+      const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractAddress, blockNumber)
+      contractDetails.methods = methods
+      contractDetails.interfaces = interfaces
+
+      return contractDetails
+    } catch (error) {
+      this.log.error(`[${contractAddress}] Error getting contract details: ${error}`)
+      return Promise.reject(error)
+    }
+  }
+
+  /**
+   * Checks if the contract is a proxy contract using the ERC1967 standard.
+   * @param {string} contractAddress - The address of the contract
+   * @param {number | string} [blockNumber] - Optional. Retrieve proxy details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @returns {Promise<{
+   *   address: string,
+   *   isProxy: boolean,
+   *   implementationAddress: string | null,
+   *   beaconAddress: string | null,
+   *   proxyType: string | null
+   * }>} The proxy details
+   * @see https://eips.ethereum.org/EIPS/eip-1967
+   */
+  async isERC1967Proxy (contractAddress, blockNumber = 'latest') {
+    const result = {
+      address: contractAddress,
+      isProxy: false,
+      implementationAddress: null,
+      beaconAddress: null,
+      proxyType: null
+    }
+
+    // Normal Proxies
+    const implementationSlot = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+
+    let implementationSlotValue
+    try {
+      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot, blockNumber)
     } catch (err) {
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.ERC1967.Normal}: ${err}`)
       return Promise.reject(err)
     }
+
+    if (notZero(implementationSlotValue)) {
+      result.proxyType = PROXY_TYPES.ERC1967.Normal
+      result.isProxy = true
+      result.implementationAddress = formatAddressFromSlot(implementationSlotValue)
+      return result
+    }
+
+    // Beacon Proxies
+    const beaconSlot = '0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50'
+
+    let beaconSlotValue
+    try {
+      beaconSlotValue = await this.getStorageSlotValueFromNode(contractAddress, beaconSlot, blockNumber)
+    } catch (err) {
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.ERC1967.Beacon}: ${err}`)
+      return Promise.reject(err)
+    }
+
+    if (notZero(beaconSlotValue)) {
+      result.proxyType = PROXY_TYPES.ERC1967.Beacon
+      result.isProxy = true
+
+      try {
+        // Get beacon contract address
+        const beaconContractAddress = formatAddressFromSlot(beaconSlotValue)
+        if (!isAddress(beaconContractAddress)) {
+          throw new Error('Invalid beacon contract address')
+        }
+        result.beaconAddress = beaconContractAddress
+
+        // Create contract instance for the beacon
+        const beaconContract = new Contract(ERC1967BeaconABI, { address: beaconContractAddress, nod3: this.nod3 })
+
+        // Get implementation contract address from beacon contract
+        const implementationAddress = await beaconContract.call('implementation', [], { blockNumber })
+        if (!isAddress(implementationAddress)) {
+          throw new Error('Beacon returns an invalid implementation address')
+        }
+
+        result.implementationAddress = implementationAddress
+        return result
+      } catch (err) {
+        this.log.warn(`[${contractAddress}] Error fetching implementation from beacon proxy: ${err}`)
+        return Promise.reject(err)
+      }
+    }
+
+    // Not a proxy contract
+    return result
+  }
+
+  /**
+   * Checks if the contract is a proxy contract using the Open Zeppelin Unstructured Storage Pattern.
+   * @param {string} contractAddress - The address of the contract
+   * @param {number | string} [blockNumber] - Optional. Retrieve proxy details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @returns {Promise<{
+   *   address: string,
+   *   isProxy: boolean,
+   *   implementationAddress: string | null,
+   *   proxyType: string | null
+   * }>} The proxy details
+   * @see https://blog.openzeppelin.com/proxy-patterns
+   * @see https://github.com/OpenZeppelin/openzeppelin-labs/tree/master/upgradeability_using_unstructured_storage
+   * @see https://github.com/OpenZeppelin/openzeppelin-labs/blob/master/upgradeability_using_unstructured_storage/contracts/UpgradeabilityProxy.sol
+   */
+  async isOZUnstructuredStorageProxy (contractAddress, blockNumber = 'latest') {
+    const result = {
+      address: contractAddress,
+      isProxy: false,
+      implementationAddress: null,
+      proxyType: null
+    }
+
+    const implementationSlot = '0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3'
+    let implementationSlotValue
+
+    try {
+      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot, blockNumber)
+    } catch (err) {
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.OZUnstructuredStorage}: ${err}`)
+      return Promise.reject(err)
+    }
+
+    if (notZero(implementationSlotValue)) {
+      result.proxyType = PROXY_TYPES.OZUnstructuredStorage
+      result.isProxy = true
+      result.implementationAddress = formatAddressFromSlot(implementationSlotValue)
+
+      return result
+    }
+
+    // Not a proxy contract
+    return result
+  }
+
+  /**
+   * Retrieves the value of a storage slot for a specific contract from the node.
+   * @param {string} contractAddress - The address of the contract
+   * @param {string} slot - The slot to retrieve the value from
+   * @param {number | string} [blockNumber] - Optional. Retrieve storage slot value at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @returns {Promise<string>} The value of the storage slot
+   */
+  async getStorageSlotValueFromNode (contractAddress, slot, blockNumber = 'latest') {
+    if (typeof blockNumber === 'number') {
+      // Convert to hex
+      blockNumber = toHex(blockNumber)
+    }
+
+    return this.nod3.eth.getStorageAt(contractAddress, slot, blockNumber)
+  }
+
+  /**
+   * Retrieves the code of a contract from the node.
+   * @param {string} contractAddress - The address of the contract
+   * @param {number | string} [blockNumber] - Optional. Retrieve contract code at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @returns {Promise<string>} The contract code
+   */
+  async getContractCodeFromNode (contractAddress, blockNumber = 'latest') {
+    if (typeof blockNumber === 'number') {
+      // Convert to hex
+      blockNumber = toHex(blockNumber)
+    }
+
+    return this.nod3.eth.getContractCodeAt(contractAddress, blockNumber)
+  }
+
+  /**
+   * Retrieves the interfaces of the contract based on the methods.
+   * @param {Array} methods - The methods of the contract
+   */
+  getInterfacesByMethods (methods) {
+    const interfaces = Object.keys(interfacesIds)
+
+    const mappedInterfaces = interfaces.map(i => [i, includesAll(methods, interfacesIds[i].methods)])
+
+    const reducedInterfaces = mappedInterfaces.reduce((obj, value) => {
+      obj[value[0]] = value[1]
+      return obj
+    }, {})
+
+    return this.mapInterfacesToERCs(reducedInterfaces)
   }
 }
 

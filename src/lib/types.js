@@ -14,11 +14,14 @@ export const bitcoinRskNetWorks = {
   33: bitcoinNetworks.REGTEST
 }
 
+// Common contract interfaces
 export const contractsInterfaces = {
   ERC20: 'ERC20',
   ERC677: 'ERC677',
   ERC165: 'ERC165',
-  ERC721: 'ERC721'
+  ERC721: 'ERC721',
+  ERC1822: 'ERC1822', // Universal Upgradeable Proxy Standard (UUPS)
+  ERC1967: 'ERC1967' // ERC 1967 standard for proxies
 }
 
 const ci = contractsInterfaces
@@ -28,3 +31,14 @@ export const tokensInterfaces = [
   ci.ERC677,
   ci.ERC721
 ]
+
+/**
+ * Constants for proxy types.
+ */
+export const PROXY_TYPES = {
+  ERC1967: {
+    Normal: 'ERC1967 Normal',
+    Beacon: 'ERC1967 Beacon'
+  },
+  OZUnstructuredStorage: 'Open Zeppelin Unstructured Storage (pre ERC1967)'
+}

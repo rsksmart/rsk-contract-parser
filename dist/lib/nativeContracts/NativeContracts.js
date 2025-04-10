@@ -1,5 +1,4 @@
-"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.NativeContracts = NativeContracts;exports.parseNativeContracts = exports.defaultNativeContracts = exports.default = void 0;
-var _rskUtils = require("@rsksmart/rsk-utils");
+"use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.NativeContracts = NativeContracts;exports.parseNativeContracts = exports.defaultNativeContracts = exports.default = void 0;var _rskUtils = require("@rsksmart/rsk-utils");
 
 const defaultNativeContracts = exports.defaultNativeContracts = {
   bridge: '0x0000000000000000000000000000000001000006',
@@ -7,10 +6,10 @@ const defaultNativeContracts = exports.defaultNativeContracts = {
 };
 
 const parseNativeContracts = (nativeContracts) => {
-  if (typeof nativeContracts !== 'object') throw new TypeError(`nativeContracts must be an object`);
-  if (Object.keys(nativeContracts) < 1) throw new Error(`Empty native contracts list`);
-  for (let name in nativeContracts) {
-    let address = nativeContracts[name];
+  if (typeof nativeContracts !== 'object') throw new TypeError('nativeContracts must be an object');
+  if (Object.keys(nativeContracts).length < 1) throw new Error('Empty native contracts list');
+  for (const name in nativeContracts) {
+    const address = nativeContracts[name];
     if (!(0, _rskUtils.isAddress)(address)) throw new Error(`Address of ${name} is not an address`);
     nativeContracts[name] = address.toLowerCase();
   }

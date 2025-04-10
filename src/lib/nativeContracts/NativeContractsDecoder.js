@@ -1,11 +1,12 @@
 import NativeContractsEvents from './NativeContractsEvents'
 import EventDecoder from '../EventDecoder'
-import { getBridgeAbi } from './bridgeAbi'
+import { getRskReleaseByBlockNumber } from './bridgeAbi'
 import { addSignatureDataToAbi } from '../utils'
 
 export default function NativeContractsEventDecoder ({ bitcoinNetwork, txBlockNumber }) {
   const nativeDecoder = NativeContractsEvents({ bitcoinNetwork })
-  const ABI = addSignatureDataToAbi(getBridgeAbi({ txBlockNumber, bitcoinNetwork }))
+  const rskRelease = getRskReleaseByBlockNumber(txBlockNumber, bitcoinNetwork)
+  const ABI = addSignatureDataToAbi(rskRelease.abi)
   const solidityDecoder = EventDecoder(ABI)
 
   const getEventDecoder = log => {

@@ -1,8 +1,8 @@
 import { filterEvents, addSignatureDataToAbi } from '../src/lib/utils'
 import { expect } from 'chai'
 
-describe(`ABI compiler`, function () {
-  describe(`filterEvents()`, function () {
+describe('ABI compiler', function () {
+  describe('filterEvents()', function () {
     const eventA = {
       type: 'event',
       name: 'test'
@@ -37,7 +37,7 @@ describe(`ABI compiler`, function () {
         }
       ]
     }
-    it(`should remove duplicated events`, () => {
+    it('should remove duplicated events', () => {
       const abi = filterEvents(addSignatureDataToAbi([eventA, eventA, eventB, eventBB]))
       expect(abi).to.be.deep.equal([eventA, eventB, eventBB])
     })

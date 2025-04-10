@@ -1,7 +1,7 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.sha256 = exports.rskAddressFromBtcPublicKey = exports.pubToAddress = exports.parsePublic = exports.h160toAddress = exports.h160 = exports.decompressPublic = exports.compressPublic = void 0;var _crypto = _interopRequireDefault(require("crypto"));
 var bs58 = _interopRequireWildcard(require("bs58"));
 var _rskUtils = require("@rsksmart/rsk-utils");
-var _secp256k = _interopRequireDefault(require("secp256k1"));function _getRequireWildcardCache(e) {if ("function" != typeof WeakMap) return null;var r = new WeakMap(),t = new WeakMap();return (_getRequireWildcardCache = function (e) {return e ? t : r;})(e);}function _interopRequireWildcard(e, r) {if (!r && e && e.__esModule) return e;if (null === e || "object" != typeof e && "function" != typeof e) return { default: e };var t = _getRequireWildcardCache(r);if (t && t.has(e)) return t.get(e);var n = { __proto__: null },a = Object.defineProperty && Object.getOwnPropertyDescriptor;for (var u in e) if ("default" !== u && Object.prototype.hasOwnProperty.call(e, u)) {var i = a ? Object.getOwnPropertyDescriptor(e, u) : null;i && (i.get || i.set) ? Object.defineProperty(n, u, i) : n[u] = e[u];}return n.default = e, t && t.set(e, n), n;}function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var _secp256k = _interopRequireDefault(require("secp256k1"));function _getRequireWildcardCache(e) {if ("function" != typeof WeakMap) return null;var r = new WeakMap(),t = new WeakMap();return (_getRequireWildcardCache = function (e) {return e ? t : r;})(e);}function _interopRequireWildcard(e, r) {if (!r && e && e.__esModule) return e;if (null === e || "object" != typeof e && "function" != typeof e) return { default: e };var t = _getRequireWildcardCache(r);if (t && t.has(e)) return t.get(e);var n = { __proto__: null },a = Object.defineProperty && Object.getOwnPropertyDescriptor;for (var u in e) if ("default" !== u && {}.hasOwnProperty.call(e, u)) {var i = a ? Object.getOwnPropertyDescriptor(e, u) : null;i && (i.get || i.set) ? Object.defineProperty(n, u, i) : n[u] = e[u];}return n.default = e, t && t.set(e, n), n;}function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 
 const PREFIXES = {
   mainnet: {
@@ -18,7 +18,7 @@ const PREFIXES = {
   }
 };
 const getNetPrefix = (netName) => {
-  let prefixes = PREFIXES[netName];
+  const prefixes = PREFIXES[netName];
   if (!prefixes) throw new Error(`Unknown network ${netName}`);
   return prefixes;
 };
@@ -35,7 +35,7 @@ const h160toAddress = (hash160, { network, prefixKey }) => {
   const prefix = getNetPrefix(network)[prefixKey];
   hash160 = Buffer.isBuffer(hash160) ? hash160.toString('hex') : (0, _rskUtils.remove0x)(hash160);
   hash160 = `${prefix}${hash160}`;
-  let check = sha256(sha256(hash160)).slice(0, 8);
+  const check = sha256(sha256(hash160)).slice(0, 8);
   return bs58.encode(Buffer.from(`${hash160}${check}`, 'hex'));
 };exports.h160toAddress = h160toAddress;
 

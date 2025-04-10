@@ -1,4 +1,3 @@
-
 import { remove0x, add0x, rlp } from '@rsksmart/rsk-utils'
 import { addSignatureDataToAbi } from '../utils'
 import * as btcUtils from '../btcUtils'
@@ -6,16 +5,16 @@ import * as btcUtils from '../btcUtils'
 export default function FakeABI (network) {
   const decodeBtcTxHash = data => {
     if (remove0x(data).length === 128) {
-      let buffer = Buffer.from(remove0x(data), 'hex')
+      const buffer = Buffer.from(remove0x(data), 'hex')
       data = add0x(buffer.toString('ascii'))
     }
     return data
   }
-  const decodeArray = data => data.map(d => Array.isArray(d) ? decodeArray(d) : add0x(d.toString('hex')))
+  // const decodeArray = data => data.map(d => Array.isArray(d) ? decodeArray(d) : add0x(d.toString('hex')))
 
   const decodeFederationData = data => {
     let [a160, keys] = data
-    let address = btcUtils.h160toAddress(a160, { prefixKey: 'scriptHash', network }).toString('hex')
+    const address = btcUtils.h160toAddress(a160, { prefixKey: 'scriptHash', network }).toString('hex')
     keys = keys.map(d => btcUtils.rskAddressFromBtcPublicKey(d.toString('hex')))
     return [address, keys]
   }
@@ -23,8 +22,8 @@ export default function FakeABI (network) {
   const commitFederationDecoder = data => {
     const decoded = rlp.decode(data)
     let [oldData, newData, block] = decoded
-    let [oldFederationAddress, oldFederationMembers] = decodeFederationData(oldData)
-    let [newFederationAddress, newFederationMembers] = decodeFederationData(newData)
+    const [oldFederationAddress, oldFederationMembers] = decodeFederationData(oldData)
+    const [newFederationAddress, newFederationMembers] = decodeFederationData(newData)
     block = block.toString('ascii')
     return [oldFederationAddress, oldFederationMembers, newFederationAddress, newFederationMembers, block]
   }

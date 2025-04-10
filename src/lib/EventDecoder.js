@@ -8,8 +8,8 @@ function EventDecoder (abi, logger) {
   const getEventAbi = topics => {
     topics = [...topics]
     const sigHash = remove0x(topics.shift())
-    let events = abi.filter(i => {
-      let { indexed, signature } = getSignatureDataFromAbi(i)
+    const events = abi.filter(i => {
+      const { indexed, signature } = getSignatureDataFromAbi(i)
       return signature === sigHash && indexed === topics.length
     })
     if (events.length > 1) throw new Error('Duplicate events in ABI')
