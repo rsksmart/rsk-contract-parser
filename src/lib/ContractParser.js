@@ -56,11 +56,11 @@ export class ContractParser {
    * @param {Nod3} options.nod3 - Nod3 instance for making blockchain calls. Required for most functionality including contract analysis, proxy detection, and event decoding.
    * @param {number | string} [options.txBlockNumber] - Transaction's block number for accurate event decoding. Can be a block number or a tag. Defaults to tag 'latest'.
    */
-  constructor ({ abi = defaultABI, log = console, initConfig = {}, nod3, txBlockNumber = 'latest' } = {}) {
+  constructor ({ abi, log, initConfig = {}, nod3, txBlockNumber = 'latest' } = {}) {
     const { net } = initConfig
     this.netId = (net) ? net.id : undefined
-    this.abi = setAbi(abi)
-    this.log = log
+    this.abi = setAbi(abi ?? defaultABI)
+    this.log = log || console
 
     if (!nod3) throw new Error('Nod3 instance is required for ContractParser initialization')
 
