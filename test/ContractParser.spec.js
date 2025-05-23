@@ -28,22 +28,23 @@ const getNod3Instance = (network) => {
   return nod3Connect('https://public-node.testnet.rsk.co')
 }
 
-describe('# Network', function () {
-  it('should connect to public RSK testnet', async function () {
-    const nod3 = getNod3Instance('testnet')
-    const net = await nod3.net.version()
-    expect(net.id).to.equal('31')
-  })
-
-  it('should connect to public RSK mainnet', async function () {
-    const nod3 = getNod3Instance('mainnet')
-    const net = await nod3.net.version()
-    expect(net.id).to.equal('30')
-  })
-})
-
 describe('Contract parser', function () {
+  describe('0) Network check', function () {
+    it('should connect to public RSK testnet', async function () {
+      const nod3 = getNod3Instance('testnet')
+      const net = await nod3.net.version()
+      expect(net.id).to.equal('31')
+    })
+
+    it('should connect to public RSK mainnet', async function () {
+      const nod3 = getNod3Instance('mainnet')
+      const net = await nod3.net.version()
+      expect(net.id).to.equal('30')
+    })
+  })
+
   describe('1) getDefaultTokenData() should return default token data', () => {
+    this.timeout(90000)
     const fixedTestnetBlockNumber = 6186626
     const fixedMainnetBlockNumber = 7376491
     const testCases = [
