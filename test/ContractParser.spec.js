@@ -5,7 +5,7 @@ import ERC20_ABI from '../src/lib/jsonAbis/ERC20.json'
 import interfacesIds from '../src/lib/interfacesIds'
 import { solidityName } from '../src/lib/utils'
 import Contract from '../src/lib/Contract'
-import { Bridge, HEROV6, USDRIF, USDCe } from './TestContracts'
+import { Bridge, HEROV6, USDRIF, USDCe, DollarOnChain } from './TestContracts'
 import { contractsInterfaces, PROXY_TYPES } from '../src/lib/types'
 
 // Use this to suppress duplicate definition warning spam from ethers
@@ -28,22 +28,23 @@ const getNod3Instance = (network) => {
   return nod3Connect('https://public-node.testnet.rsk.co')
 }
 
-describe('# Network', function () {
-  it('should connect to public RSK testnet', async function () {
-    const nod3 = getNod3Instance('testnet')
-    const net = await nod3.net.version()
-    expect(net.id).to.equal('31')
-  })
-
-  it('should connect to public RSK mainnet', async function () {
-    const nod3 = getNod3Instance('mainnet')
-    const net = await nod3.net.version()
-    expect(net.id).to.equal('30')
-  })
-})
-
 describe('Contract parser', function () {
+  describe('0) Network check', function () {
+    it('should connect to public RSK testnet', async function () {
+      const nod3 = getNod3Instance('testnet')
+      const net = await nod3.net.version()
+      expect(net.id).to.equal('31')
+    })
+
+    it('should connect to public RSK mainnet', async function () {
+      const nod3 = getNod3Instance('mainnet')
+      const net = await nod3.net.version()
+      expect(net.id).to.equal('30')
+    })
+  })
+
   describe('1) getDefaultTokenData() should return default token data', () => {
+    this.timeout(90000)
     const fixedTestnetBlockNumber = 6186626
     const fixedMainnetBlockNumber = 7376491
     const testCases = [
@@ -691,5 +692,106 @@ describe('Contract parser', function () {
         })
       })
     }
+  })
+
+  describe('19) parseTxLogs()', () => {
+    describe('should parse transaction logs into events', async () => {
+      const contractTestCases = [
+        Bridge,
+        USDCe,
+        DollarOnChain,
+        USDRIF
+      ]
+
+      const nod3 = getNod3Instance('mainnet')
+      const initConfig = {
+        nativeContracts: {
+          bridge: '0x0000000000000000000000000000000001000006',
+          remasc: '0x0000000000000000000000000000000001000008'
+        },
+        net: {
+          id: '30',
+          name: 'RSK Mainnet'
+        }
+      }
+
+      // log properties
+      const logProps = [
+        'logIndex',
+        'blockNumber',
+        'blockHash',
+        'transactionHash',
+        'transactionIndex',
+        'address',
+        'data',
+        'topics'
+      ]
+
+      // aggregated properties
+      const aggregatedProps = [
+        'signature',
+        'event',
+        'args',
+        'abi',
+        '_addresses'
+      ]
+
+      for (const contract of contractTestCases) {
+        // test all its events
+        describe(`[${contract.name}] events`, () => {
+          for (const eventData of contract.events) {
+            const eventName = eventData.expectedEvent.withVerifiedAbi.event
+
+            // test both cases: unverified and verified ABI
+            describe(`- ${eventName}`, () => {
+              it(`with default ABI ${eventData.expectedEvent.withUnverifiedAbi.event ? '(decodeable)' : '(not decodeable)'}`, async () => {
+                const log = eventData.log
+                const parser = new ContractParser({ nod3, initConfig })
+                const decodedLogs = parser.parseTxLogs([log])
+                const event = decodedLogs[0]
+
+                expect(decodedLogs).to.be.an('array', 'parseTxLogs() should return an array')
+                expect(decodedLogs).to.have.length(1, 'parseTxLogs() should return an array with 1 element')
+
+                expect(event).to.be.an('object', 'parseTxLogs() should return an array with 1 element')
+
+                for (const prop of logProps) {
+                  expect(event[prop]).to.deep.equal(eventData.expectedEvent.withUnverifiedAbi[prop], `log.${prop} should be equal`)
+                }
+
+                for (const prop of aggregatedProps) {
+                  expect(event[prop]).to.deep.equal(eventData.expectedEvent.withUnverifiedAbi[prop], `event.${prop} should be equal`)
+                }
+              })
+
+              it('with verified ABI', async () => {
+                let abi = contract.abi
+                if (contract.proxyDetails.isProxy) {
+                  abi = contract.proxyDetails.implementationABI
+                }
+
+                const log = eventData.log
+                const parser = new ContractParser({ nod3, initConfig, abi })
+                const decodedLogs = parser.parseTxLogs([log])
+                const event = decodedLogs[0]
+
+                expect(decodedLogs).to.be.an('array', 'parseTxLogs() should return an array')
+                expect(decodedLogs).to.have.length(1, 'parseTxLogs() should return an array with 1 element')
+
+                expect(event).to.be.an('object', 'parseTxLogs() should return an array with 1 element')
+
+                for (const prop of logProps) {
+                  expect(event[prop]).to.deep.equal(eventData.expectedEvent.withVerifiedAbi[prop], `log.${prop} should be equal`)
+                }
+
+                for (const prop of aggregatedProps) {
+                  expect(event[prop]).to.deep.equal(eventData.expectedEvent.withVerifiedAbi[prop], `event.${prop} should be equal`)
+                }
+              })
+            })
+          }
+        })
+      }
+    })
   })
 })

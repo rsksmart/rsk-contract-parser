@@ -32,51 +32,39 @@ npm install @rsksmart/rsk-contract-parser
 The `ContractParser` class is the main class. It can be used to parse contracts, decode events, and interact with contracts on the blockchain by instantiating `Contract` instances.
 
 ```javascript
-import { ContractParser, createRskNodeProvider, publicRskNodeUrls } from '@rsksmart/rsk-contract-parser';
+import { ContractParser, createRskNodeProvider } from '@rsksmart/rsk-contract-parser';
 
-// Use our network connection wrapper
-const network = 'testnet';
-const nod3 = createRskNodeProvider(network);
-
-// Required for native contracts parsing
-const initConfig = {
-  net: {
-    id: publicRskNodeUrls[network].id
-  }
-}
-
-const parser = new ContractParser({ 
-  nod3,
-  initConfig
-  // abi: ABI to use for events decoding and contract interactions. If not provided, ContractParser will use a default ABI that covers most standards but its strongly recommended to provide the contract's ABI.
-  // txBlockNumber: Optional. Used for native events decoding. Can be a block number or tag 'latest' (Default: 'latest').
-});
+// You can use the default provider (public rsk nodes)
+const nod3 = createRskNodeProvider('testnet');
+const parser = new ContractParser({ nod3 });
 ```
+
+**Note:** If an abi is not provided, ContractParser will use a default one that covers most standards. However, it's strongly recommended to provide the contract's ABI to fully allow contract interactions and events decoding.
+
 
 ### Working with Token Contracts
 
 You can use the `ContractParser` class to retrieve default token data from a contract:
 
 ```javascript
-import { ContractParser, createRskNodeProvider, publicRskNodeUrls } from '@rsksmart/rsk-contract-parser';
+import { ContractParser, createRskNodeProvider } from '@rsksmart/rsk-contract-parser';
 
-const network = 'mainnet';
-const nod3 = createRskNodeProvider(network);
-const initConfig = {
-  net: {
-    id: publicRskNodeUrls[network].id
-  }
-}
+const nod3 = createRskNodeProvider('mainnet');
+const parser = new ContractParser({ nod3 });
 
 const tokenAddress = '0x3A15461d8aE0F0Fb5Fa2629e9DA7D66A794a6e37'; // USDRIF on Mainnet
 const blockNumber = 7376491;
 
-const parser = new ContractParser({ nod3, initConfig });
-
-// Current parser ABI will be used for the contract instance
+// Set the contract instance for the parser using the current set ABI
 const contract = parser.makeContract(tokenAddress);
 
-// Get default token information at a specific block
+// Call contract methods
+const name = await contract.call('name', [], { blockNumber }); // 'RIF US Dollar'
+const symbol = await contract.call('symbol', [], { blockNumber }); // 'USDRIF'
+const decimals = await contract.call('decimals', [], { blockNumber }); // 18
+const totalSupply = await contract.call('totalSupply', [], { blockNumber }); // BigInt('0xhexValue')
+
+// parser.getDefaultTokenData() can also be used to retrieve the default token data at a specific block
 const tokenData = await parser.getDefaultTokenData(contract, blockNumber);
 console.log(tokenData);
 ```
@@ -88,7 +76,7 @@ Result:
   name: 'RIF US Dollar',
   symbol: 'USDRIF',
   decimals: 18,
-  totalSupply: BigInt('hex value')
+  totalSupply: BigInt('0xhexValue')
 }
 ```
 
@@ -97,22 +85,22 @@ Result:
 ```javascript
 import { Contract, createRskNodeProvider } from '@rsksmart/rsk-contract-parser';
 
-// Setup
-const abi = undefined; // For the following ERC20 methods, the default parser ABI can be used
-const address = '0x3A15461d8aE0F0Fb5Fa2629e9DA7D66A794a6e37'; // USDRIF on Mainnet
 const nod3 = createRskNodeProvider('mainnet');
+
+const abi = undefined; // Not required. Default parser ABI already supports ERC20 interface.
+const address = '0x3A15461d8aE0F0Fb5Fa2629e9DA7D66A794a6e37'; // USDRIF on Mainnet
 
 const contract = new Contract(abi, { address, nod3 });
 
-// Call contract methods
+// Call contract methods. Methods without params can skip the params argument
 const name = await contract.call('name'); // 'RIF US Dollar'
 const symbol = await contract.call('symbol'); // 'USDRIF'
 const decimals = await contract.call('decimals'); // 18
-const totalSupply = await contract.call('totalSupply'); // BigInt('hex value')
+const totalSupply = await contract.call('totalSupply'); // BigInt('0xhexValue')
 
 // with params...
 const params = ['0xaddress'];
-const balance = await contract.call('balanceOf', params); // BigInt('hex value')
+const balance = await contract.call('balanceOf', params); // BigInt('0xhexValue')
 
 // with specific call options...
 const options = {
@@ -120,7 +108,7 @@ const options = {
   blockNumber: 'latest'
 }
 
-const balance = await contract.call('balanceOf', params, options); // BigInt('hex value')
+const balance = await contract.call('balanceOf', params, options); // BigInt('0xhexValue')
 ```
 
 ### Analyzing Contract Details
@@ -128,19 +116,14 @@ const balance = await contract.call('balanceOf', params, options); // BigInt('he
 The `ContractParser` class also allows to get detailed information about a contract:
 
 ```javascript
-import { ContractParser, createRskNodeProvider, publicRskNodeUrls } from '@rsksmart/rsk-contract-parser';
+import { ContractParser, createRskNodeProvider } from '@rsksmart/rsk-contract-parser';
 
 const nod3 = createRskNodeProvider('mainnet');
-const initConfig = {
-  net: {
-    id: publicRskNodeUrls[network].id
-  }
-}
+const parser = new ContractParser({ nod3 });
 
-const parser = new ContractParser({ nod3, initConfig });
 const contractAddress = '0x3A15461d8aE0F0Fb5Fa2629e9DA7D66A794a6e37'; // USDRIF on Mainnet
 
-// Get contract details at the latest block
+// Get contract details for latest block
 const contractDetails = await parser.getContractDetails(contractAddress);
 console.log(contractDetails);
 ```
@@ -240,7 +223,7 @@ Result:
 
 ### Working with Native Contracts
 
-The `ContractParser` class allows interaction with native contracts like the Bridge and Remasc.
+The `ContractParser` class allows interaction with Rootstock native contracts like the Bridge and Remasc.
 
 ```javascript
 import {
@@ -255,27 +238,26 @@ const network = 'mainnet';
 const nod3 = createRskNodeProvider(network);
 const initConfig = {
   net: {
-    id: publicRskNodeUrls[network].id
+    id: '30' // '30' for RSK Mainnet, '31' for RSK Testnet
   }
 }
 
 const parser = new ContractParser({ nod3, initConfig });
 
-// Get RSK native contract address
-const bridgeAddress = parser.getNativeContractAddress('bridge'); // '0x0000000000000000000000000000000001000006' (testnet and mainnet)
-const remascAddress = parser.getNativeContractAddress('remasc'); // '0x0000000000000000000000000000000001000008' (testnet and mainnet)
+// Get RSK native contract addresses (both networks)
+const bridgeAddress = parser.getNativeContractAddress('bridge'); // '0x0000000000000000000000000000000001000006'
+const remascAddress = parser.getNativeContractAddress('remasc'); // '0x0000000000000000000000000000000001000008'
 
 // To interact with the bridge and decode its events, we need to get the correct rsk release for the specified block and network, which contains the proper bridge ABI
-const bridgeRelease = getRskReleaseByBlockNumber(7338024, 'mainnet');
+const bridgeRelease = getRskReleaseByBlockNumber(7338024, network);
 
-// Available RSK releases
-console.log(RSK_RELEASES.mainnet); // Available releases for mainnet
-console.log(RSK_RELEASES.testnet); // Available releases for testnet
+// Each network has its own RSK releases values.
+console.log(RSK_RELEASES[network]);
 ```
 
 ### Bridge specific
 
-You can easily get the latest bridge ABI and methods (latest rsk release):
+You can retrieve the latest bridge ABI and methods supported by the parser like the following:
 
 ```javascript
 import { getLatestBridgeMethods, getLatestBridgeAbi } from '@rsksmart/rsk-contract-parser';
@@ -285,7 +267,7 @@ const bridgeMethods = getLatestBridgeMethods();
 
 ```
 
-Another way is to retrieve the latest rsk release using the `getRskReleaseByBlockNumber` method:
+Another way to do this is by retrieving the latest rsk release using the `getRskReleaseByBlockNumber` method:
 
 ```javascript
 import { getRskReleaseByBlockNumber } from '@rsksmart/rsk-contract-parser';
@@ -309,26 +291,21 @@ Result:
 The `ContractParser` class allows to parse transaction logs.
 
 ```javascript
-import { ContractParser, createRskNodeProvider, publicRskNodeUrls } from '@rsksmart/rsk-contract-parser';
+import { ContractParser, createRskNodeProvider } from '@rsksmart/rsk-contract-parser';
 
-const network = 'mainnet';
-const nod3 = createRskNodeProvider(network);
-const initConfig = {
-  net: {
-    id: publicRskNodeUrls[network].id
-  }
-}
+const nod3 = createRskNodeProvider('mainnet');
+const parser = new ContractParser({ nod3 });
 
-const parser = new ContractParser({ nod3, initConfig });
+// Transaction receipt
 const txReceipt = await nod3.eth.getTransactionReceipt('0xTransactionHash');
 
-// Parse transaction logs from a transaction using the current parser ABI
+// Parse transaction logs from a transaction using the current set ABI
 const events = parser.parseTxLogs(txReceipt.logs);
 ```
 
 ### Example
 
-For the following log present in the tx **0x833ff7250b7b6f0d1e0e048bdf0417af16ea6e0dd5e22929da12d9ea9a68cbff** (mainnet):
+For mainnet tx **0x833ff7250b7b6f0d1e0e048bdf0417af16ea6e0dd5e22929da12d9ea9a68cbff**, we have the following log:
 
 ```javascript
 {
@@ -347,7 +324,7 @@ For the following log present in the tx **0x833ff7250b7b6f0d1e0e048bdf0417af16ea
 }
 ```
 
-The result will be:
+After parsing the log, the result would be:
 
 ```javascript
 {
@@ -363,13 +340,18 @@ The result will be:
     '0x0000000000000000000000007ef673bedb238526168c44885797d117921c66cc',
     '0x000000000000000000000000804c44cec51b24e9f20447f8d21ba153403280d1'
   ],
+  // Event signature. It's always the first log topic.
+  // This value can also be used to construct the method selector, in this case: `0xddf252ad`
   signature: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+  // Event name
   event: 'Transfer',
+  // Event arguments
   args: [
     '0x7ef673bedb238526168c44885797d117921c66cc',
     '0x804c44cec51b24e9f20447f8d21ba153403280d1',
     '0x0659a719ccc43e100000'
   ],
+  // abi fragment that decodes this event
   abi: {
     type: 'event',
     anonymous: false,
@@ -380,6 +362,7 @@ The result will be:
       { type: 'uint256', name: 'value', indexed: false }
     ]
   },
+  // involved addresses in the event
   _addresses: [
     '0x7ef673bedb238526168c44885797d117921c66cc',
     '0x804c44cec51b24e9f20447f8d21ba153403280d1'
@@ -395,8 +378,7 @@ Deployments:
 ```javascript
 import { BcSearch, createRskNodeProvider } from '@rsksmart/rsk-contract-parser';
 
-const network = 'mainnet';
-const nod3 = createRskNodeProvider(network);
+const nod3 = createRskNodeProvider('mainnet');
 
 // Initialize blockchain search helper
 const bcSearch = BcSearch(nod3);

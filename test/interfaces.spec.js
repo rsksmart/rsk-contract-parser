@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { ContractParser } from '../src/lib/ContractParser'
-import nod3 from '../src/lib/nod3Connect'
+import { createRskNodeProvider } from '../src/lib/nod3Connect'
 
 const addresses = {
   '0xebea27d994371cd0cb9896ae4c926bc5221f6317': ['ERC20'],
@@ -11,16 +11,15 @@ const addresses = {
   '0x7974f2971e0b5d68f30513615fafec5c451da4d1': ['ERC20', 'ERC677']
 }
 
+const nod3 = createRskNodeProvider('testnet')
 const parser = new ContractParser({ nod3 })
 
-describe('# Network', function () {
+describe('# Interfaces detection', function () {
   it('should be connected to RSK testnet', async function () {
     const net = await nod3.net.version()
     expect(net.id).to.be.equal('31')
   })
-})
 
-describe('# Interfaces detection', function () {
   for (const address in addresses) {
     this.timeout(60000)
     it(`${address} should have the following interfaces: ${addresses[address]}`, async function () {

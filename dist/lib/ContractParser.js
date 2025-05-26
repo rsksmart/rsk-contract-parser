@@ -41,18 +41,25 @@ class ContractParser {
    * Creates a new ContractParser instance.
    * @param {Object} options - Configuration options
    * @param {Array} [options.abi] - The Application Binary Interface (ABI) used for decoding. If not provided, a default ABI is used, however its strongly recommended to provide the full ABI.
-   * @param {Object} [options.log=console] - Logging mechanism to use for error and debug messages
-   * @param {Object} [options.initConfig] - Initial configuration object
-   * @param {Object} [options.initConfig.net] - Network configuration information
-   * @param {string|number} [options.initConfig.net.id] - Network ID used to determine RSK/Bitcoin network
+   * @param {Object} [options.log] - Logging mechanism to use for error and debug messages
+   * @param {Object} [options.initConfig] - Initial configuration object. Optional.
+   * @example
+   * const initConfig = {
+   *   nativeContracts: {
+   *     bridge: '0x0000000000000000000000000000000001000006', // Bridge contract address
+   *     remasc: '0x0000000000000000000000000000000001000008' // Remasc contract address
+   *   },
+   *   net: {
+   *     id: '30', // 30: RSK Mainnet, 31: RSK Testnet
+   *   }
+   * }
    * @param {Nod3} options.nod3 - Nod3 instance for making blockchain calls. Required for most functionality including contract analysis, proxy detection, and event decoding.
    * @param {number | string} [options.txBlockNumber] - Transaction's block number for accurate event decoding. Can be a block number or a tag. Defaults to tag 'latest'.
    */
-  constructor({ abi, log, initConfig, nod3, txBlockNumber = 'latest' } = {}) {
-    initConfig = initConfig || {};
+  constructor({ abi, log, initConfig = {}, nod3, txBlockNumber = 'latest' } = {}) {
     const { net } = initConfig;
     this.netId = net ? net.id : undefined;
-    this.abi = (0, _utils.setAbi)(abi || _Abi.default);
+    this.abi = (0, _utils.setAbi)(abi ?? _Abi.default);
     this.log = log || console;
 
     if (!nod3) throw new Error('Nod3 instance is required for ContractParser initialization');
