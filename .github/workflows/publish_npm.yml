@@ -74,14 +74,10 @@ jobs:
       - name: Pre upload validation
         id: pack
         run: | 
-          # Clean any existing tarballs
           rm -f *.tgz
-          # Create new tarball
-          npm pack --dry-run > output 2>&1
-          PRE_UPLOAD_HASH=$(grep 'shasum' output | awk '{print $NF}')
+          PRE_UPLOAD_HASH=$(npm pack --dry-run 2>&1 | grep 'shasum:' | awk '{print $NF}')
           echo "PRE_UPLOAD_HASH=$PRE_UPLOAD_HASH" >> $GITHUB_OUTPUT
           echo "PRE_UPLOAD_HASH: $PRE_UPLOAD_HASH"
-          rm -f output
         
       - name: Check if version is already published
         run: |
