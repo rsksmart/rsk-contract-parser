@@ -612,4 +612,3 @@ class ContractParser {
 }exports.ContractParser = ContractParser;var _default = exports.default =
 
 ContractParser;
-//# sourceMappingURL=ContractParser.js.map

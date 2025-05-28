@@ -202,4 +202,3 @@ function toHex(number) {
 
   return number;
 }
-//# sourceMappingURL=utils.js.map

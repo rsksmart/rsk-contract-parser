@@ -63,8 +63,10 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org
 
-      - name: Install dependencies
-        run: npm install
+      - name: Clean install dependencies
+        run: |
+          rm -rf dist
+          npm ci
 
       - name: Build
         run: npm run build
@@ -72,6 +74,9 @@ jobs:
       - name: Pre upload validation
         id: pack
         run: | 
+          # Clean any existing tarballs
+          rm -f *.tgz
+          # Create new tarball
           npm pack --dry-run > output 2>&1
           PRE_UPLOAD_HASH=$(grep 'shasum' output | awk '{print $NF}')
           echo "PRE_UPLOAD_HASH=$PRE_UPLOAD_HASH" >> $GITHUB_OUTPUT

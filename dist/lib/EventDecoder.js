@@ -71,4 +71,3 @@ function EventDecoder(abi, logger) {
 }var _default = exports.default =
 
 EventDecoder;
-//# sourceMappingURL=EventDecoder.js.map

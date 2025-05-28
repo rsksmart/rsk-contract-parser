@@ -15,4 +15,3 @@ function NativeContractsEventDecoder({ bitcoinNetwork, txBlockNumber }) {
   };
   return Object.freeze({ getEventDecoder });
 }
-//# sourceMappingURL=NativeContractsDecoder.js.map

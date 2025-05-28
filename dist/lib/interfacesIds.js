@@ -52,4 +52,3 @@ function makeInterface(methods) {
 }var _default = exports.default =
 
 interfacesIds;
-//# sourceMappingURL=interfacesIds.js.map

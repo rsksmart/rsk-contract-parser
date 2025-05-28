@@ -53,4 +53,3 @@ const decompressPublic = (compressed) => parsePublic(compressed, false).toString
 const compressPublic = (pub) => parsePublic(pub, true).toString('hex');exports.compressPublic = compressPublic;
 
 const rskAddressFromBtcPublicKey = (cpk) => (0, _rskUtils.add0x)((0, _rskUtils.keccak256)(parsePublic(cpk, false).slice(1)).slice(-40));exports.rskAddressFromBtcPublicKey = rskAddressFromBtcPublicKey;
-//# sourceMappingURL=btcUtils.js.map

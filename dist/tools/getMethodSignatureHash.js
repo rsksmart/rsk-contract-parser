@@ -17,4 +17,3 @@ function main() {
 }
 
 main();
-//# sourceMappingURL=getMethodSignatureHash.js.map

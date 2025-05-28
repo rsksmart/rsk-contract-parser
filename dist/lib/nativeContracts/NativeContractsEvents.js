@@ -81,4 +81,3 @@ function NativeContractsEvents({ bitcoinNetwork } = {}) {
 }var _default = exports.default =
 
 NativeContractsEvents;
-//# sourceMappingURL=NativeContractsEvents.js.map

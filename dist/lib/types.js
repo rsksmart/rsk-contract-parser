@@ -42,4 +42,3 @@ const PROXY_TYPES = exports.PROXY_TYPES = {
   },
   OZUnstructuredStorage: 'Open Zeppelin Unstructured Storage (pre ERC1967)'
 };
-//# sourceMappingURL=types.js.map

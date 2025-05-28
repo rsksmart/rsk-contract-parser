@@ -25,4 +25,3 @@ console.log = function (message) {
     originalConsoleLog(message);
   }
 };
-//# sourceMappingURL=index.js.map
