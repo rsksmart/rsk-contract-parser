@@ -81,6 +81,7 @@ jobs:
           PRE_UPLOAD_HASH=$(grep 'shasum' output | awk '{print $NF}')
           echo "PRE_UPLOAD_HASH=$PRE_UPLOAD_HASH" >> $GITHUB_OUTPUT
           echo "PRE_UPLOAD_HASH: $PRE_UPLOAD_HASH"
+          rm -f output
         
       - name: Check if version is already published
         run: |
