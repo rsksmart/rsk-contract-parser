@@ -121,4 +121,3 @@ class Contract {
     }
   }
 }exports.default = Contract;
-//# sourceMappingURL=Contract.js.map

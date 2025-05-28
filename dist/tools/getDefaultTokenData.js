@@ -61,4 +61,3 @@ curl -X POST \
   http://localhost:4446
 
 */
-//# sourceMappingURL=getDefaultTokenData.js.map

@@ -36,4 +36,3 @@ function NativeContracts({ nativeContracts } = {}) {
 }var _default = exports.default =
 
 NativeContracts;
-//# sourceMappingURL=NativeContracts.js.map

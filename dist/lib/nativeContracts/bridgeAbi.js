@@ -127,4 +127,3 @@ function getRskReleaseByBlockNumber(blockNumber = 'latest', network) {
     }
   }
 }
-//# sourceMappingURL=bridgeAbi.js.map

@@ -31,4 +31,3 @@ const createRskNodeProvider = (network, customUrl) => {
 };exports.createRskNodeProvider = createRskNodeProvider;var _default = exports.default =
 
 nod3Connect();
-//# sourceMappingURL=nod3Connect.js.map
