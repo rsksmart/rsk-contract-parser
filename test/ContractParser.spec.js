@@ -437,7 +437,60 @@ describe('Contract parser', function () {
     })
   })
 
-  describe('16) isERC1967Proxy()', () => {
+  describe('16) isERC1822Proxy()', () => {
+    it('should return ERC1822 proxy details for mock contract', async () => {
+      const mockNod3 = {
+        eth: {
+          getStorageAt: function () { return Promise.resolve('0x0000000000000000000000001234567890123456789012345678901234567890') },
+          getContractCodeAt: function () { return Promise.resolve('0x1234567890') }
+        }
+      }
+
+      const contractAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      const implementationAddress = '0x1234567890123456789012345678901234567890'
+      const parser = new ContractParser({ nod3: mockNod3 })
+      const proxyDetails = await parser.isERC1822Proxy(contractAddress)
+      const {
+        address,
+        isProxy,
+        implementationAddress: resultImplementationAddress,
+        proxyType
+      } = proxyDetails
+
+      expect(proxyDetails).to.be.an('object')
+      expect(address).to.equal(contractAddress)
+      expect(isProxy).to.equal(true)
+      expect(proxyType).to.equal(PROXY_TYPES.ERC1822)
+      expect(resultImplementationAddress).to.equal(implementationAddress)
+    })
+
+    it('should return empty ERC1822 proxy details for mock contract', async () => {
+      const mockNod3 = {
+        eth: {
+          getStorageAt: function () { return Promise.resolve('0x0000000000000000000000000000000000000000000000000000000000000000') },
+          getContractCodeAt: function () { return Promise.resolve('0x1234567890') }
+        }
+      }
+
+      const contractAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      const parser = new ContractParser({ nod3: mockNod3 })
+      const proxyDetails = await parser.isERC1822Proxy(contractAddress)
+      const {
+        address,
+        isProxy,
+        implementationAddress,
+        proxyType
+      } = proxyDetails
+
+      expect(proxyDetails).to.be.an('object')
+      expect(address).to.equal(contractAddress)
+      expect(isProxy).to.equal(false)
+      expect(proxyType).to.equal(null)
+      expect(implementationAddress).to.equal(null)
+    })
+  })
+
+  describe('17) isERC1967Proxy()', () => {
     it(`should return ERC1967 proxy details for ${USDRIF.name} ${USDRIF.address} (${USDRIF.network})`, async () => {
       const nod3 = getNod3Instance(USDRIF.network)
       const parser = new ContractParser({ nod3 })
@@ -479,7 +532,7 @@ describe('Contract parser', function () {
     })
   })
 
-  describe('17) isOZUnstructuredStorageProxy()', () => {
+  describe('18) isOZUnstructuredStorageProxy()', () => {
     it(`should return OZ unstructured storage proxy details for ${USDCe.name} ${USDCe.address} (${USDCe.network})`, async () => {
       const nod3 = getNod3Instance(USDCe.network)
       const parser = new ContractParser({ nod3 })
@@ -517,7 +570,7 @@ describe('Contract parser', function () {
     })
   })
 
-  describe('18) getContractDetails()', function () {
+  describe('19) getContractDetails()', function () {
     this.timeout(60000)
 
     const testCases = [
@@ -560,13 +613,11 @@ describe('Contract parser', function () {
           unverifiedMethods: USDRIF.proxyDetails.unverifiedImplementationMethods,
           unverifiedInterfaces: [
             ...USDRIF.proxyDetails.unverifiedImplementationInterfaces,
-            contractsInterfaces.ERC1822,
             contractsInterfaces.ERC1967
           ],
           verifiedMethods: USDRIF.proxyDetails.verifiedImplementationMethods,
           verifiedInterfaces: [
             ...USDRIF.proxyDetails.verifiedImplementationInterfaces,
-            contractsInterfaces.ERC1822,
             contractsInterfaces.ERC1967
           ]
         }
@@ -580,15 +631,9 @@ describe('Contract parser', function () {
           beaconAddress: null,
           proxyType: PROXY_TYPES.OZUnstructuredStorage,
           unverifiedMethods: USDCe.proxyDetails.unverifiedImplementationMethods,
-          unverifiedInterfaces: [
-            ...USDCe.proxyDetails.unverifiedImplementationInterfaces,
-            contractsInterfaces.ERC1822
-          ],
+          unverifiedInterfaces: USDCe.proxyDetails.unverifiedImplementationInterfaces,
           verifiedMethods: USDCe.proxyDetails.verifiedImplementationMethods,
-          verifiedInterfaces: [
-            ...USDCe.proxyDetails.verifiedImplementationInterfaces,
-            contractsInterfaces.ERC1822
-          ]
+          verifiedInterfaces: USDCe.proxyDetails.verifiedImplementationInterfaces
         }
       }
     ]
@@ -694,7 +739,7 @@ describe('Contract parser', function () {
     }
   })
 
-  describe('19) parseTxLogs()', () => {
+  describe('20) parseTxLogs()', () => {
     describe('should parse transaction logs into events', async () => {
       const contractTestCases = [
         Bridge,

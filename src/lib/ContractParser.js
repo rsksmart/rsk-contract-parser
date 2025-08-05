@@ -381,6 +381,22 @@ export class ContractParser {
     }
 
     try {
+      // ERC1822 Proxy check
+      const ERC1822ProxyDetails = await this.isERC1822Proxy(contractAddress, blockNumber)
+      if (ERC1822ProxyDetails.isProxy) {
+        contractDetails.isProxy = true
+        contractDetails.implementationAddress = ERC1822ProxyDetails.implementationAddress
+        contractDetails.proxyType = ERC1822ProxyDetails.proxyType
+        if (isAddress(contractDetails.implementationAddress)) {
+          // Use implementation methods and interfaces. Append proxy standard interfaces
+          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
+          contractDetails.methods = methods
+          contractDetails.interfaces = [contractsInterfaces.ERC1822, ...interfaces]
+        }
+
+        return contractDetails
+      }
+
       // ERC1967 Proxy check
       const ERC1967ProxyDetails = await this.isERC1967Proxy(contractAddress, blockNumber)
       if (ERC1967ProxyDetails.isProxy) {
@@ -391,12 +407,8 @@ export class ContractParser {
         if (isAddress(contractDetails.implementationAddress)) {
           // Use implementation methods and interfaces. Append proxy standard interfaces
           const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
-          const proxyInterfaces = [contractsInterfaces.ERC1822, contractsInterfaces.ERC1967]
           contractDetails.methods = methods
-          contractDetails.interfaces = [
-            ...interfaces,
-            ...proxyInterfaces
-          ]
+          contractDetails.interfaces = [contractsInterfaces.ERC1967, ...interfaces]
         }
 
         return contractDetails
@@ -409,14 +421,10 @@ export class ContractParser {
         contractDetails.implementationAddress = OZUnstructuredStorageProxyDetails.implementationAddress
         contractDetails.proxyType = OZUnstructuredStorageProxyDetails.proxyType
         if (isAddress(contractDetails.implementationAddress)) {
-          // Use implementation methods and interfaces. Append proxy standard interfaces
+          // Use implementation methods and interfaces
           const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
-          const proxyInterfaces = [contractsInterfaces.ERC1822]
           contractDetails.methods = methods
-          contractDetails.interfaces = [
-            ...interfaces,
-            ...proxyInterfaces
-          ]
+          contractDetails.interfaces = interfaces
         }
 
         return contractDetails
@@ -432,6 +440,50 @@ export class ContractParser {
       this.log.error(`[${contractAddress}] Error getting contract details: ${error}`)
       return Promise.reject(error)
     }
+  }
+
+  /**
+     * Checks if the contract is a proxy contract using the ERC1822 Universal Upgradeable Proxy Standard (UUPS).
+     * @param {string} contractAddress - The address of the contract
+     * @param {number | string} [blockNumber] - Optional. Retrieve proxy details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+     * @returns {Promise<{
+    *   address: string,
+    *   isProxy: boolean,
+    *   implementationAddress: string | null,
+    *   proxyType: string | null
+    * }>} The proxy details
+    * @see https://eips.ethereum.org/EIPS/eip-1822
+    */
+  async isERC1822Proxy (contractAddress, blockNumber = 'latest') {
+    const result = {
+      address: contractAddress,
+      isProxy: false,
+      implementationAddress: null,
+      proxyType: null
+    }
+
+    // ERC1822 uses keccak256("PROXIABLE") as storage slot
+    // keccak256("PROXIABLE") = 0xc5f16f0fcc639fa48a6947836d9850f504798523bf8c9a3a87d5876cf622bcf7
+    const implementationSlot = '0xc5f16f0fcc639fa48a6947836d9850f504798523bf8c9a3a87d5876cf622bcf7'
+    let implementationSlotValue
+
+    try {
+      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, implementationSlot, blockNumber)
+    } catch (err) {
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.ERC1822}: ${err}`)
+      return Promise.reject(err)
+    }
+
+    if (notZero(implementationSlotValue)) {
+      result.proxyType = PROXY_TYPES.ERC1822
+      result.isProxy = true
+      result.implementationAddress = formatAddressFromSlot(implementationSlotValue)
+
+      return result
+    }
+
+    // Not a proxy contract
+    return result
   }
 
   /**
@@ -519,7 +571,7 @@ export class ContractParser {
   }
 
   /**
-   * Checks if the contract is a proxy contract using the Open Zeppelin Unstructured Storage Pattern.
+   * Checks if the contract is a proxy contract using the Open Zeppelin Unstructured Storage Pattern (not an official standard)
    * @param {string} contractAddress - The address of the contract
    * @param {number | string} [blockNumber] - Optional. Retrieve proxy details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
    * @returns {Promise<{
@@ -528,6 +580,8 @@ export class ContractParser {
    *   implementationAddress: string | null,
    *   proxyType: string | null
    * }>} The proxy details
+   * @see https://etherscan.io/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48#code (USDC token - also mentioned in EIP1967)
+   * @see https://ethereum.stackexchange.com/questions/99812/finding-the-address-of-the-proxied-to-address-of-a-proxy
    * @see https://blog.openzeppelin.com/proxy-patterns
    * @see https://github.com/OpenZeppelin/openzeppelin-labs/tree/master/upgradeability_using_unstructured_storage
    * @see https://github.com/OpenZeppelin/openzeppelin-labs/blob/master/upgradeability_using_unstructured_storage/contracts/UpgradeabilityProxy.sol

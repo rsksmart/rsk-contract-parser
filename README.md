@@ -153,7 +153,7 @@ Result:
     'supportsInterface(bytes4)',
     'burn(address,uint256)'
   ],
-  interfaces: [ 'ERC20', 'ERC165', 'ERC1822', 'ERC1967' ]
+  interfaces: [ 'ERC20', 'ERC165', 'ERC1967' ]
 }
 ```
 
@@ -197,7 +197,7 @@ Result:
       'upgradeTo(address)',
       'upgradeToAndCall(address,bytes)'
     ],
-  interfaces: [ 'ERC20', 'ERC165', 'ERC1822', 'ERC1967' ]
+  interfaces: [ 'ERC20', 'ERC165', 'ERC1967' ]
 }
 ```
 
