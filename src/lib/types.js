@@ -20,8 +20,8 @@ export const contractsInterfaces = {
   ERC677: 'ERC677',
   ERC165: 'ERC165',
   ERC721: 'ERC721',
-  ERC1822: 'ERC1822', // Universal Upgradeable Proxy Standard (UUPS)
-  ERC1967: 'ERC1967' // ERC 1967 standard for proxies
+  ERC1822: 'ERC1822',
+  ERC1967: 'ERC1967'
 }
 
 const ci = contractsInterfaces
@@ -36,9 +36,10 @@ export const tokensInterfaces = [
  * Constants for proxy types.
  */
 export const PROXY_TYPES = {
+  ERC1822: 'ERC1822 Universal Upgradeable Proxy Standard (UUPS)',
+  OZUnstructuredStorage: 'Open Zeppelin\'s Unstructured Storage Proxy Pattern (pre ERC1967)',
   ERC1967: {
-    Normal: 'ERC1967 Normal',
-    Beacon: 'ERC1967 Beacon'
-  },
-  OZUnstructuredStorage: 'Open Zeppelin Unstructured Storage (pre ERC1967)'
+    Normal: 'ERC1967 Proxy Storage Slots - Normal',
+    Beacon: 'ERC1967 Proxy Storage Slots - Beacon'
+  }
 }
