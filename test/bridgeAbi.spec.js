@@ -34,7 +34,7 @@ describe('getBridgeAbi(txBlockNumber, bitcoinNetwork) should return the correct 
     { height: 7338024, abi: lovell, name: 'lovell' },
     { height: 8052200, abi: reed, name: 'reed' }
   ]
-  const testnetTestExpectatins = [
+  const testnetTestExpectations = [
     { height: 0, abi: wasabi, name: 'wasabi' },
     { height: 1, abi: wasabi, name: 'wasabi' },
     { height: 3103001, abi: hop, name: 'hop' },
@@ -49,7 +49,7 @@ describe('getBridgeAbi(txBlockNumber, bitcoinNetwork) should return the correct 
     })
   }
 
-  for (const { height, abi, name } of testnetTestExpectatins) {
+  for (const { height, abi, name } of testnetTestExpectations) {
     it(`Should return ${name} abi for height ${height} in testnet`, () => {
       const release = getRskReleaseByBlockNumber(height, 'testnet')
       expect(release.abi).to.be.deep.equal(abi)
@@ -64,7 +64,7 @@ describe('getBridgeAbi(txBlockNumber, bitcoinNetwork) should return the correct 
     const release1 = getRskReleaseByBlockNumber('latest', 'mainnet')
     const release2 = getRskReleaseByBlockNumber('latest', 'testnet')
     expect(release1.abi).to.be.deep.equal(mainnetTestExpectations[mainnetTestExpectations.length - 1].abi)
-    expect(release2.abi).to.be.deep.equal(testnetTestExpectatins[testnetTestExpectatins.length - 1].abi)
+    expect(release2.abi).to.be.deep.equal(testnetTestExpectations[testnetTestExpectations.length - 1].abi)
   })
 
   it('Should throw an error when block number is not either a number or block tag "latest"', () => {
