@@ -72,6 +72,9 @@ jobs:
           rm -rf dist
           npm ci
 
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - name: Build
         run: npm run build
 
