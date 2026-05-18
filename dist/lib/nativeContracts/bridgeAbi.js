@@ -5,7 +5,8 @@ var _bridgeIris = _interopRequireDefault(require("./bridge-iris.json"));
 var _bridgeFingerroot = _interopRequireDefault(require("./bridge-fingerroot.json"));
 var _bridgeHop = _interopRequireDefault(require("./bridge-hop.json"));
 var _bridgeLovell = _interopRequireDefault(require("./bridge-lovell.json"));
-var _bridgeReed = _interopRequireDefault(require("./bridge-reed.json"));function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
+var _bridgeReed = _interopRequireDefault(require("./bridge-reed.json"));
+var _bridgeVetiver = _interopRequireDefault(require("./bridge-vetiver.json"));function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 
 const RSK_RELEASES = exports.RSK_RELEASES = {
   mainnet: [
@@ -48,6 +49,11 @@ const RSK_RELEASES = exports.RSK_RELEASES = {
     name: 'reed',
     height: 8052200,
     abi: _bridgeReed.default
+  },
+  {
+    name: 'vetiver',
+    height: 8804200,
+    abi: _bridgeVetiver.default
   }],
 
   testnet: [
@@ -85,6 +91,11 @@ const RSK_RELEASES = exports.RSK_RELEASES = {
     name: 'reed',
     height: 6835700,
     abi: _bridgeReed.default
+  },
+  {
+    name: 'vetiver',
+    height: 7604200,
+    abi: _bridgeVetiver.default
   }]
 
 };
