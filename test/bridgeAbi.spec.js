@@ -1,5 +1,6 @@
 import { expect } from 'chai'
 import { Interface } from '@ethersproject/abi'
+import { bridge as upstreamBridge } from '@rsksmart/rsk-precompiled-abis'
 import orchid from '../src/lib/nativeContracts/bridge-orchid.json'
 import wasabi from '../src/lib/nativeContracts/bridge-wasabi.json'
 import iris from '../src/lib/nativeContracts/bridge-iris.json'
@@ -95,5 +96,11 @@ describe('Bridge ABI peg-out fee methods', () => {
     const data = iface.encodeFunctionData('getEstimatedFeesForNextPegOutEvent', [])
     const parsed = iface.parseTransaction({ data })
     expect(parsed.name).to.equal('getEstimatedFeesForNextPegOutEvent')
+  })
+
+  it('upstream @rsksmart/rsk-precompiled-abis exposes the peg-out fee methods with the expected wire-format selectors', () => {
+    const iface = new Interface(upstreamBridge.abi.filter(i => i.type === 'function'))
+    expect(iface.getSighash('getEstimatedFeesForPegOutAmount(uint256)')).to.equal('0xd2b712f4')
+    expect(iface.getSighash('getEstimatedFeesForNextPegOutEvent()')).to.equal('0x7817d854')
   })
 })
