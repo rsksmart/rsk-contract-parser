@@ -10,6 +10,7 @@ import lovell from '../src/lib/nativeContracts/bridge-lovell.json'
 import reed from '../src/lib/nativeContracts/bridge-reed.json'
 import vetiver from '../src/lib/nativeContracts/bridge-vetiver.json'
 import { getRskReleaseByBlockNumber, RSK_RELEASES } from '../src/lib/nativeContracts/bridgeAbi'
+import { getBridgeAddress, getRemascAddress } from '../src/lib/utils'
 
 describe('All abis must be in ascendant order', () => {
   const mainnetAbis = RSK_RELEASES.mainnet
@@ -102,5 +103,15 @@ describe('Bridge ABI peg-out fee methods', () => {
     const iface = new Interface(upstreamBridge.abi.filter(i => i.type === 'function'))
     expect(iface.getSighash('getEstimatedFeesForPegOutAmount(uint256)')).to.equal('0xd2b712f4')
     expect(iface.getSighash('getEstimatedFeesForNextPegOutEvent()')).to.equal('0x7817d854')
+  })
+})
+
+describe('Native contract address helpers', () => {
+  it('getBridgeAddress returns the RSK Bridge precompile address', () => {
+    expect(getBridgeAddress()).to.equal('0x0000000000000000000000000000000001000006')
+  })
+
+  it('getRemascAddress returns the RSK REMASC precompile address', () => {
+    expect(getRemascAddress()).to.equal('0x0000000000000000000000000000000001000008')
   })
 })
