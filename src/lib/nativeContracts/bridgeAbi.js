@@ -6,6 +6,7 @@ import fingerroot from './bridge-fingerroot.json'
 import hop from './bridge-hop.json'
 import lovell from './bridge-lovell.json'
 import reed from './bridge-reed.json'
+import vetiver from './bridge-vetiver.json'
 
 export const RSK_RELEASES = {
   mainnet: [
@@ -48,6 +49,11 @@ export const RSK_RELEASES = {
       name: 'reed',
       height: 8052200,
       abi: reed
+    },
+    {
+      name: 'vetiver',
+      height: 8804200,
+      abi: vetiver
     }
   ],
   testnet: [
@@ -85,6 +91,11 @@ export const RSK_RELEASES = {
       name: 'reed',
       height: 6835700,
       abi: reed
+    },
+    {
+      name: 'vetiver',
+      height: 7604200,
+      abi: vetiver
     }
   ]
 }

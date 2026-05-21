@@ -2,6 +2,7 @@ import { keccak256, add0x } from '@rsksmart/rsk-utils'
 import { ABI_SIGNATURE, INTERFACE_ID_BYTES } from './types'
 import { bridge } from '@rsksmart/rsk-precompiled-abis'
 import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
+import { defaultNativeContracts } from './nativeContracts/NativeContracts'
 
 export const getLatestBridgeAbi = () => {
   try {
@@ -29,6 +30,17 @@ export const getBridgeAddress = () => {
     if (!bridge || !bridge.address || !isAddress(bridge.address)) throw new Error('Invalid Bridge Address')
 
     return bridge.address
+  } catch (error) {
+    console.error(error)
+    return null
+  }
+}
+
+export const getRemascAddress = () => {
+  try {
+    const address = defaultNativeContracts.remasc
+    if (!isAddress(address)) throw new Error('Invalid Remasc Address')
+    return address
   } catch (error) {
     console.error(error)
     return null
