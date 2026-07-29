@@ -307,6 +307,23 @@ describe('Contract parser', function () {
         expect(result).to.equal(expected)
       })
     }
+
+    describe('selectors with leading zero bytes', () => {
+      // solc's dispatcher pushes 0x00fdd58e (balanceOf(address,uint256)) as
+      // PUSH3 fdd58e, so the 4 literal bytes never appear in the bytecode
+      const cases = [
+        { name: 'matches PUSH3-encoded selector', bytecode: '0x6080604052600462fdd58e14601c57005b', selector: '00fdd58e', expected: true },
+        { name: 'matches a literal occurrence', bytecode: '0x608060405200fdd58e14601c57005b', selector: '00fdd58e', expected: true },
+        { name: 'rejects the stripped bytes without the PUSH opcode', bytecode: '0x60806040524461fdd58e14601c57005b', selector: '00fdd58e', expected: false },
+        { name: 'matches PUSH2 encoding for two leading zero bytes', bytecode: '0x608061beef14601c57005b', selector: '0000beef', expected: true }
+      ]
+
+      for (const { name, bytecode, selector, expected } of cases) {
+        it(name, () => {
+          expect(parser.hasMethodSelector(bytecode, selector)).to.equal(expected)
+        })
+      }
+    })
   })
 
   describe('10) getMethodsSelectors()', () => {
@@ -837,6 +854,88 @@ describe('Contract parser', function () {
           }
         })
       }
+    })
+  })
+
+  describe('21) isERC1167Proxy()', function () {
+    this.timeout(60000)
+
+    const implementation = '0x1234567890123456789012345678901234567890'
+    const minimalProxyBytecode = `0x363d3d373d3d3d363d73${implementation.slice(2)}5af43d82803e903d91602b57fd5bf3`
+
+    it('should return ERC1167 proxy details for mock minimal proxy bytecode', async () => {
+      const mockNod3 = {
+        eth: {
+          getContractCodeAt: function () { return Promise.resolve(minimalProxyBytecode) }
+        }
+      }
+
+      const contractAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      const parser = new ContractParser({ nod3: mockNod3 })
+      const proxyDetails = await parser.isERC1167Proxy(contractAddress)
+
+      expect(proxyDetails).to.be.an('object')
+      expect(proxyDetails.address).to.equal(contractAddress)
+      expect(proxyDetails.isProxy).to.equal(true)
+      expect(proxyDetails.proxyType).to.equal(PROXY_TYPES.ERC1167)
+      expect(proxyDetails.implementationAddress).to.equal(implementation)
+    })
+
+    it('should return empty ERC1167 proxy details for non-proxy bytecode', async () => {
+      const mockNod3 = {
+        eth: {
+          getContractCodeAt: function () { return Promise.resolve('0x6080604052600436') }
+        }
+      }
+
+      const contractAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      const parser = new ContractParser({ nod3: mockNod3 })
+      const proxyDetails = await parser.isERC1167Proxy(contractAddress)
+
+      expect(proxyDetails.isProxy).to.equal(false)
+      expect(proxyDetails.proxyType).to.equal(null)
+      expect(proxyDetails.implementationAddress).to.equal(null)
+    })
+
+    it('should reject bytecode with a proxy-like prefix but trailing code', async () => {
+      const mockNod3 = {
+        eth: {
+          getContractCodeAt: function () { return Promise.resolve(minimalProxyBytecode + 'aabb') }
+        }
+      }
+
+      const parser = new ContractParser({ nod3: mockNod3 })
+      const proxyDetails = await parser.isERC1167Proxy('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')
+
+      expect(proxyDetails.isProxy).to.equal(false)
+    })
+
+    // Onchain Olympics (thirdweb) — ERC-1155 behind an ERC1167 minimal proxy
+    const onchainOlympics = '0xb8ef8a681c00d41cc0ca6e64b7415b020a6a206a'
+
+    it(`should detect the ERC1167 proxy for Onchain Olympics ${onchainOlympics} (mainnet)`, async () => {
+      const nod3 = getNod3Instance('mainnet')
+      const parser = new ContractParser({ nod3 })
+      const proxyDetails = await parser.isERC1167Proxy(onchainOlympics)
+
+      expect(proxyDetails.isProxy).to.equal(true)
+      expect(proxyDetails.proxyType).to.equal(PROXY_TYPES.ERC1167)
+      expect(proxyDetails.implementationAddress).to.equal('0x54c97c29021a12cacb31f8388b32dd5486083f7b')
+    })
+
+    it(`getContractDetails() should resolve ERC1155 interfaces through the ${onchainOlympics} proxy (mainnet)`, async () => {
+      const nod3 = getNod3Instance('mainnet')
+      const parser = new ContractParser({ nod3 })
+      const contractDetails = await parser.getContractDetails(onchainOlympics)
+
+      expect(contractDetails.isProxy).to.equal(true)
+      expect(contractDetails.proxyType).to.equal(PROXY_TYPES.ERC1167)
+      expect(contractDetails.implementationAddress).to.equal('0x54c97c29021a12cacb31f8388b32dd5486083f7b')
+      expect(contractDetails.interfaces).to.include.members([
+        contractsInterfaces.ERC1167,
+        contractsInterfaces.ERC1155,
+        'ERC1155MetadataURI'
+      ])
     })
   })
 })

@@ -1,6 +1,16 @@
-import { addSignatureDataToAbi, getSignatureDataFromAbi } from './utils'
+import { addSignatureDataToAbi, getSignatureDataFromAbi, soliditySignature } from './utils'
 import { remove0x, add0x, bufferToHex } from '@rsksmart/rsk-utils'
 import { Interface } from '@ethersproject/abi'
+
+// ERC-1155 token ids and amounts feed balance reconstruction downstream, so
+// they decode to uint256 decimal strings and arrays keep their arity even with
+// a single element (generic decoding collapses one-element arrays to a scalar
+// and formats numbers as hex)
+const ERC1155_EVENT_SIGNATURES = new Set([
+  soliditySignature('TransferSingle(address,address,address,uint256,uint256)'),
+  soliditySignature('TransferBatch(address,address,address,uint256[],uint256[])'),
+  soliditySignature('URI(string,uint256)')
+])
 
 function EventDecoder (abi, logger) {
   const contractInterface = new Interface(addSignatureDataToAbi(abi))
@@ -37,6 +47,16 @@ function EventDecoder (abi, logger) {
     return decoded
   }
 
+  const formatErc1155Element = (type, decoded) => {
+    if (decoded && decoded._isBigNumber) return decoded.toString()
+    return formatElement(type, decoded)
+  }
+
+  const encodeErc1155Element = (type, decoded) => {
+    if (Array.isArray(decoded)) return decoded.map(d => formatErc1155Element(type, d))
+    return formatErc1155Element(type, decoded)
+  }
+
   const decodeLog = log => {
     try {
       const { eventFragment, name, args, topic } = contractInterface.parseLog(log)
@@ -44,10 +64,11 @@ function EventDecoder (abi, logger) {
       const { address } = log
 
       const parsedArgs = []
+      const encoder = ERC1155_EVENT_SIGNATURES.has(remove0x(topic)) ? encodeErc1155Element : encodeElement
 
       for (const i in eventFragment.inputs) {
         parsedArgs.push(
-          encodeElement(eventFragment.inputs[i].type, args[i])
+          encoder(eventFragment.inputs[i].type, args[i])
         )
       }
 

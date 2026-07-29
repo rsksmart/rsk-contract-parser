@@ -43,12 +43,25 @@ const interfacesIds = exports.interfacesIds = {
   ),
   ERC721Exists: makeInterface([
   'exists(uint256)']
-  )
+  ),
+  // erc165: ERC-1155 mandates supportsInterface, so a negative bytecode scan
+  // (e.g. a proxy) can be settled by calling it on-chain
+  ERC1155: makeInterface([
+  'safeTransferFrom(address,address,uint256,uint256,bytes)',
+  'safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)',
+  'balanceOf(address,uint256)',
+  'balanceOfBatch(address[],uint256[])',
+  'setApprovalForAll(address,bool)',
+  'isApprovedForAll(address,address)'],
+  { erc165: true }),
+  ERC1155MetadataURI: makeInterface([
+  'uri(uint256)'],
+  { erc165: true })
 };
 
-function makeInterface(methods) {
+function makeInterface(methods, { erc165 = false } = {}) {
   const id = (0, _utils.erc165IdFromMethods)(methods);
-  return { methods, id };
+  return { methods, id, erc165 };
 }var _default = exports.default =
 
 interfacesIds;
