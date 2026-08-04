@@ -10,4 +10,6 @@ import tx9 from './09.expected'
 import tx10 from './10.expected'
 import tx11 from './address_array_event.expected' // indexed address[] event
 import tx12 from './address_array_event_2.expected' // address[] event (not indexed)
-export default [tx1, tx2, tx3, tx4, tx5, tx6, tx7, tx8, tx9, tx10, tx11, tx12]
+import tx13 from './erc1155_transfer_single.expected' // ERC-1155 URI + TransferSingle (mainnet)
+import tx14 from './erc1155_transfer_batch.expected' // ERC-1155 TransferBatch, 20 ids (mainnet)
+export default [tx1, tx2, tx3, tx4, tx5, tx6, tx7, tx8, tx9, tx10, tx11, tx12, tx13, tx14]

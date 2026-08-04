@@ -11,6 +11,12 @@ const addresses = {
   '0x7974f2971e0b5d68f30513615fafec5c451da4d1': ['ERC20', 'ERC677']
 }
 
+// IOVers NFTs: plain ERC-1155 whose balanceOf(address,uint256) selector has a
+// leading zero byte (bytecode carries it PUSH3-encoded)
+const mainnetAddresses = {
+  '0x11b64191106b1cf66fcd2f8389077c596cdc5646': ['ERC165', 'ERC1155', 'ERC1155MetadataURI']
+}
+
 const nod3 = createRskNodeProvider('testnet')
 const parser = new ContractParser({ nod3 })
 
@@ -25,6 +31,24 @@ describe('# Interfaces detection', function () {
     it(`${address} should have the following interfaces: ${addresses[address]}`, async function () {
       const { interfaces } = await parser.getContractMethodsAndERCInterfaces(address)
       expect(interfaces).to.include.members(addresses[address])
+    })
+  }
+})
+
+describe('# Interfaces detection (mainnet)', function () {
+  const mainnetNod3 = createRskNodeProvider('mainnet')
+  const mainnetParser = new ContractParser({ nod3: mainnetNod3 })
+
+  it('should be connected to RSK mainnet', async function () {
+    const net = await mainnetNod3.net.version()
+    expect(net.id).to.be.equal('30')
+  })
+
+  for (const address in mainnetAddresses) {
+    this.timeout(60000)
+    it(`${address} should have the following interfaces: ${mainnetAddresses[address]}`, async function () {
+      const { interfaces } = await mainnetParser.getContractMethodsAndERCInterfaces(address)
+      expect(interfaces).to.include.members(mainnetAddresses[address])
     })
   }
 })

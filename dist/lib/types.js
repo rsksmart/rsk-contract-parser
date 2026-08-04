@@ -20,8 +20,10 @@ const contractsInterfaces = exports.contractsInterfaces = {
   ERC677: 'ERC677',
   ERC165: 'ERC165',
   ERC721: 'ERC721',
+  ERC1155: 'ERC1155',
   ERC1822: 'ERC1822',
-  ERC1967: 'ERC1967'
+  ERC1967: 'ERC1967',
+  ERC1167: 'ERC1167'
 };
 
 const ci = contractsInterfaces;
@@ -29,7 +31,8 @@ const ci = contractsInterfaces;
 const tokensInterfaces = exports.tokensInterfaces = [
 ci.ERC20,
 ci.ERC677,
-ci.ERC721];
+ci.ERC721,
+ci.ERC1155];
 
 
 /**
@@ -41,5 +44,6 @@ const PROXY_TYPES = exports.PROXY_TYPES = {
   ERC1967: {
     Normal: 'ERC1967 Proxy Storage Slots - Normal',
     Beacon: 'ERC1967 Proxy Storage Slots - Beacon'
-  }
+  },
+  ERC1167: 'ERC1167 Minimal Proxy'
 };

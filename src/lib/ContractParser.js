@@ -6,6 +6,7 @@ import Contract from './Contract'
 import EventDecoder from './EventDecoder'
 import defaultABI from './Abi'
 import ERC1967BeaconABI from './jsonAbis/ERC1967Beacon.json'
+import ERC165ABI from './jsonAbis/ERC165.json'
 import {
   ABI_SIGNATURE,
   bitcoinRskNetWorks,
@@ -309,7 +310,16 @@ export class ContractParser {
    * @returns {boolean} True if the selector is found in the contract bytecode, false otherwise
    */
   hasMethodSelector (contractByteCode, selector) {
-    return selector && contractByteCode && contractByteCode.includes(selector)
+    if (!selector || !contractByteCode) return false
+    if (contractByteCode.includes(selector)) return true
+    // solc's dispatcher pushes each selector as a minimal constant: a selector
+    // with N leading zero bytes appears as PUSH(4-N) <stripped bytes>
+    // (e.g. balanceOf(address,uint256) 0x00fdd58e compiles to PUSH3 fdd58e),
+    // never as the 4 literal bytes
+    const stripped = selector.replace(/^(00)+/, '')
+    if (stripped === selector) return false
+    const pushOpcode = (0x5f + stripped.length / 2).toString(16)
+    return contractByteCode.includes(pushOpcode + stripped)
   }
 
   /**
@@ -337,12 +347,52 @@ export class ContractParser {
    *   interfaces: string[]
    * }>} The contract methods and ERC interfaces
    */
-  async getContractMethodsAndERCInterfaces (address, blockNumber = 'latest') {
-    const contractByteCode = await this.getContractCodeFromNode(address, blockNumber)
+  async getContractMethodsAndERCInterfaces (address, blockNumber = 'latest', contractByteCode = null) {
+    contractByteCode = contractByteCode || await this.getContractCodeFromNode(address, blockNumber)
     const methods = this.getMethodsFromContractByteCode(contractByteCode)
     const interfaces = this.getInterfacesByMethods(methods)
 
+    if (methods.includes('supportsInterface(bytes4)')) {
+      const confirmed = await this.getInterfacesByERC165Calls(address, blockNumber, interfaces)
+      for (const name of confirmed) {
+        if (!interfaces.includes(name)) interfaces.push(name)
+      }
+    }
+
     return { methods, interfaces }
+  }
+
+  /**
+   * Confirms interfaces via on-chain ERC-165 supportsInterface calls.
+   *
+   * Bytecode selector scanning misses contracts whose dispatcher doesn't embed
+   * selectors literally, so interfaces whose standard mandates ERC-165 (flagged
+   * with erc165 in interfacesIds) get settled by asking the contract itself.
+   * Contracts answering true to 0xffffffff violate ERC-165 and are ignored.
+   *
+   * @param {string} address - The contract address
+   * @param {number | string} [blockNumber] - Optional. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @param {string[]} [detectedInterfaces] - Interfaces already detected, skipped here
+   * @returns {Promise<string[]>} The confirmed interface names
+   */
+  async getInterfacesByERC165Calls (address, blockNumber = 'latest', detectedInterfaces = []) {
+    const candidates = Object.entries(interfacesIds)
+      .filter(([name, { erc165 }]) => erc165 && !detectedInterfaces.includes(contractsInterfaces[name] || name))
+    if (!candidates.length) return []
+
+    const contract = new Contract(ERC165ABI, { address, nod3: this.nod3 })
+    const supports = async interfaceId => {
+      const res = await this.call(contract, 'supportsInterface', [interfaceId], { blockNumber })
+      return res === true
+    }
+
+    if (!(await supports('0x01ffc9a7')) || (await supports('0xffffffff'))) return []
+
+    const confirmed = []
+    for (const [name, { id }] of candidates) {
+      if (await supports(id)) confirmed.push(contractsInterfaces[name] || name)
+    }
+    return confirmed
   }
 
   /**
@@ -381,6 +431,24 @@ export class ContractParser {
     }
 
     try {
+      const contractByteCode = await this.getContractCodeFromNode(contractAddress, blockNumber)
+
+      // ERC1167 Minimal Proxy check (pure bytecode pattern, no storage slots involved)
+      const ERC1167ProxyDetails = await this.isERC1167Proxy(contractAddress, blockNumber, contractByteCode)
+      if (ERC1167ProxyDetails.isProxy) {
+        contractDetails.isProxy = true
+        contractDetails.implementationAddress = ERC1167ProxyDetails.implementationAddress
+        contractDetails.proxyType = ERC1167ProxyDetails.proxyType
+        if (isAddress(contractDetails.implementationAddress)) {
+          // Use implementation methods and interfaces. Append proxy standard interfaces
+          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
+          contractDetails.methods = methods
+          contractDetails.interfaces = [contractsInterfaces.ERC1167, ...interfaces]
+        }
+
+        return contractDetails
+      }
+
       // ERC1822 Proxy check
       const ERC1822ProxyDetails = await this.isERC1822Proxy(contractAddress, blockNumber)
       if (ERC1822ProxyDetails.isProxy) {
@@ -431,7 +499,7 @@ export class ContractParser {
       }
 
       // Normal contracts
-      const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractAddress, blockNumber)
+      const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractAddress, blockNumber, contractByteCode)
       contractDetails.methods = methods
       contractDetails.interfaces = interfaces
 
@@ -440,6 +508,50 @@ export class ContractParser {
       this.log.error(`[${contractAddress}] Error getting contract details: ${error}`)
       return Promise.reject(error)
     }
+  }
+
+  /**
+   * Checks if the contract is an ERC1167 minimal proxy.
+   * The whole runtime bytecode is a fixed 45-byte delegatecall forwarder with
+   * the implementation address embedded at bytes 10-29, so detection is a
+   * bytecode pattern match — minimal proxies keep no storage slots.
+   * @param {string} contractAddress - The address of the contract
+   * @param {number | string} [blockNumber] - Optional. Retrieve proxy details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @param {string} [contractByteCode] - Optional. Preloaded runtime bytecode, skips the node fetch.
+   * @returns {Promise<{
+   *   address: string,
+   *   isProxy: boolean,
+   *   implementationAddress: string | null,
+   *   proxyType: string | null
+   * }>} The proxy details
+   * @see https://eips.ethereum.org/EIPS/eip-1167
+   */
+  async isERC1167Proxy (contractAddress, blockNumber = 'latest', contractByteCode = null) {
+    const result = {
+      address: contractAddress,
+      isProxy: false,
+      implementationAddress: null,
+      proxyType: null
+    }
+
+    let code = contractByteCode
+    if (!code) {
+      try {
+        code = await this.getContractCodeFromNode(contractAddress, blockNumber)
+      } catch (err) {
+        this.log.warn(`[${contractAddress}] Error checking bytecode for ${PROXY_TYPES.ERC1167}: ${err}`)
+        return Promise.reject(err)
+      }
+    }
+
+    const match = /^0x363d3d373d3d3d363d73([0-9a-f]{40})5af43d82803e903d91602b57fd5bf3$/i.exec(code || '')
+    if (match) {
+      result.isProxy = true
+      result.proxyType = PROXY_TYPES.ERC1167
+      result.implementationAddress = `0x${match[1].toLowerCase()}`
+    }
+
+    return result
   }
 
   /**

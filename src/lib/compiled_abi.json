@@ -11634,6 +11634,221 @@
     }
   },
   {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function",
+    "__signatureData": {
+      "method": "balanceOf(address,uint256)",
+      "signature": "00fdd58ea0325fd79f486f8008ad3fad17dcb1cd2ee8474215c114771d87863e",
+      "index": [],
+      "indexed": 0,
+      "eventSignature": null
+    }
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "accounts",
+        "type": "address[]"
+      },
+      {
+        "name": "ids",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "balanceOfBatch",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function",
+    "__signatureData": {
+      "method": "balanceOfBatch(address[],uint256[])",
+      "signature": "4e1273f46c229233ffb464c9596131917915848124c0e2e01ddcbd310b2609d4",
+      "index": [],
+      "indexed": 0,
+      "eventSignature": null
+    }
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "setApprovalForAll",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "__signatureData": {
+      "method": "setApprovalForAll(address,bool)",
+      "signature": "a22cb4651ab9570f89bb516380c40ce76762284fb1f21337ceaf6adab99e7d4a",
+      "index": [],
+      "indexed": 0,
+      "eventSignature": null
+    }
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "name": "isApprovedForAll",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function",
+    "__signatureData": {
+      "method": "isApprovedForAll(address,address)",
+      "signature": "e985e9c5c6636c6879256001057b28ccac7718ef0ac56553ff9b926452cab8a3",
+      "index": [],
+      "indexed": 0,
+      "eventSignature": null
+    }
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safeTransferFrom",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "__signatureData": {
+      "method": "safeTransferFrom(address,address,uint256,uint256,bytes)",
+      "signature": "f242432a01954b0e0efb67e72c9b3b8ed77690657780385b256ac9aba0e35f0b",
+      "index": [],
+      "indexed": 0,
+      "eventSignature": null
+    }
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "name": "ids",
+        "type": "uint256[]"
+      },
+      {
+        "name": "amounts",
+        "type": "uint256[]"
+      },
+      {
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safeBatchTransferFrom",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "__signatureData": {
+      "method": "safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)",
+      "signature": "2eb2c2d667cf048e1ec82a4537b123e459951729e09ec737ac88a8e82fb2d1db",
+      "index": [],
+      "indexed": 0,
+      "eventSignature": null
+    }
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "uri",
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function",
+    "__signatureData": {
+      "method": "uri(uint256)",
+      "signature": "0e89341c5b7431e95282621bb9c54e51fb5c29234df43f9e19151d3892fb0380",
+      "index": [],
+      "indexed": 0,
+      "eventSignature": null
+    }
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -14121,6 +14336,123 @@
       ],
       "indexed": 2,
       "eventSignature": "6ec7c2ffac5ad6d7d9db485249c7ee82787337710b42999d5de5bb698b729640"
+    }
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "TransferSingle",
+    "type": "event",
+    "__signatureData": {
+      "method": "TransferSingle(address,address,address,uint256,uint256)",
+      "signature": "c3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62",
+      "index": [
+        true,
+        true,
+        true,
+        false,
+        false
+      ],
+      "indexed": 3,
+      "eventSignature": "8b05615eb2ab841a9f274b5c0b548bdf1a11408fffbdf255f57a32bcb9344097"
+    }
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "ids",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "name": "values",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "TransferBatch",
+    "type": "event",
+    "__signatureData": {
+      "method": "TransferBatch(address,address,address,uint256[],uint256[])",
+      "signature": "4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb",
+      "index": [
+        true,
+        true,
+        true,
+        false,
+        false
+      ],
+      "indexed": 3,
+      "eventSignature": "4b4adc591bc3e7caa4704e661aaecc1ceba3e8199cc6c16f2e3616905145fc8d"
+    }
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "value",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "URI",
+    "type": "event",
+    "__signatureData": {
+      "method": "URI(string,uint256)",
+      "signature": "6bb7ff708619ba0610cba295a58592e0451dee2622938c8755667688daf3529b",
+      "index": [
+        false,
+        true
+      ],
+      "indexed": 1,
+      "eventSignature": "3f7a16f4fc0cb2b11f102909f7f3e040bcd2df704b77828ef9fd1ad5c8c341c4"
     }
   }
 ]
