@@ -111,6 +111,10 @@ const options = {
 const balance = await contract.call('balanceOf', params, options); // BigInt('0xhexValue')
 ```
 
+#### Overloaded methods
+
+The default ABI carries overloaded names (for example `balanceOf(address)` from ERC-20/721 alongside `balanceOf(address,uint256)` from ERC-1155). Pass the full Solidity signature to pick a specific overload: `contract.call('balanceOf(address,uint256)', [address, id])`. A bare name resolves by argument count — `encodeCall`/`call` select the single overload whose input count matches the params — and when the count still leaves more than one match, or when decoding a result where no count is available, the call throws `Ambiguous method "<name>" — pass the signature: <sig1> | <sig2>` naming the choices.
+
 ### Analyzing Contract Details
 
 The `ContractParser` class also allows to get detailed information about a contract:
