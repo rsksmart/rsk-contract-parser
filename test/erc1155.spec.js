@@ -1,5 +1,7 @@
 import { expect } from 'chai'
 import { ContractParser } from '../src/lib/ContractParser'
+import EventDecoder from '../src/lib/EventDecoder'
+import ERC1155ABI from '../src/lib/jsonAbis/ERC1155.json'
 import interfacesIds from '../src/lib/interfacesIds'
 import { soliditySignature } from '../src/lib/utils'
 import { defaultAbiCoder } from '@ethersproject/abi'
@@ -18,6 +20,7 @@ const initConfig = {
 
 const CONTRACT = '0x8859c08ed73bd06b2961ccc88160cb11a61d69f7'
 const OPERATOR = '0x1111111111111111111111111111111111111111'
+const OWNER = '0x4444444444444444444444444444444444444444'
 const FROM = '0x2222222222222222222222222222222222222222'
 const TO = '0x3333333333333333333333333333333333333333'
 const ZERO = '0x0000000000000000000000000000000000000000'
@@ -104,6 +107,23 @@ describe('# ERC1155 event decoding', function () {
     const [event] = parser.parseTxLogs([log])
     expect(event.event).to.equal('Transfer')
     expect(event.args[2]).to.equal('0xff')
+  })
+})
+
+describe('# ERC1155 ApprovalForAll event', function () {
+  const decoder = EventDecoder(JSON.parse(JSON.stringify(ERC1155ABI)), console)
+
+  it('the shipped ERC1155 ABI decodes ApprovalForAll to owner, operator, approved', () => {
+    const log = Object.assign(baseLog(5), {
+      topics: [
+        topic0('ApprovalForAll(address,address,bool)'),
+        padAddress(OWNER), padAddress(OPERATOR)
+      ],
+      data: defaultAbiCoder.encode(['bool'], [true])
+    })
+    const event = decoder.decodeLog(log)
+    expect(event.event).to.equal('ApprovalForAll')
+    expect(event.args).to.deep.equal([OWNER, OPERATOR, 'true'])
   })
 })
 
