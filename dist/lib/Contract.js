@@ -69,7 +69,22 @@ class Contract {
    * @returns {string} The encoded call data
    */
   encodeCall(method, params = []) {
-    return this.contractInterface.encodeFunctionData(method, params);
+    return this.contractInterface.encodeFunctionData(this.#resolveSignature(method, params), params);
+  }
+
+  #resolveSignature(method, params) {
+    if (typeof method !== 'string' || method.includes('(') || !Array.isArray(this.abi)) return method;
+    const fragments = this.abi.filter((f) => f && f.type === 'function' && f.name === method);
+    if (fragments.length === 0) return method;
+    const signatures = [...new Set(fragments.map((f) => _abi.FunctionFragment.from(f).format()))];
+    if (signatures.length === 1) return signatures[0];
+    if (Array.isArray(params)) {
+      const byArity = [...new Set(fragments.
+      filter((f) => (f.inputs || []).length === params.length).
+      map((f) => _abi.FunctionFragment.from(f).format()))];
+      if (byArity.length === 1) return byArity[0];
+    }
+    throw new Error(`Ambiguous method "${method}" — pass the signature: ${signatures.join(' | ')}`);
   }
 
   /**
@@ -84,8 +99,9 @@ class Contract {
       const decoded = this.contractInterface.decodeFunctionResult(method, data);
       return Array.isArray(decoded) && outputs && outputs.length < 2 ? decoded[0] : decoded;
     } else {
-      const { outputs } = this.contractInterface.getFunction(method);
-      const decoded = this.contractInterface.decodeFunctionResult(method, data);
+      const signature = this.#resolveSignature(method);
+      const { outputs } = this.contractInterface.getFunction(signature);
+      const decoded = this.contractInterface.decodeFunctionResult(signature, data);
       return Array.isArray(decoded) && outputs && outputs.length < 2 ? decoded[0] : decoded;
     }
   }
@@ -105,15 +121,17 @@ class Contract {
       if (!this.address) throw new Error('The contract address is not defined');
       if (!Array.isArray(params)) throw new Error('Params must be an array');
 
+      const signature = this.#resolveSignature(method, params);
+
       const tx = {
         ...options.txData,
         to: this.address,
-        data: this.encodeCall(method, params)
+        data: this.encodeCall(signature, params)
       };
 
       const result = await this.nod3.eth.call(tx, options.blockNumber);
 
-      const decodedResult = this.decodeCall(method, result);
+      const decodedResult = this.decodeCall(signature, result);
 
       return decodedResult;
     } catch (err) {

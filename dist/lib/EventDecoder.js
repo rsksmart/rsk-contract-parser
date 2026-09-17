@@ -13,7 +13,7 @@ const ERC1155_EVENT_SIGNATURES = new Set([
 );
 
 function EventDecoder(abi, logger) {
-  const contractInterface = new _abi.Interface((0, _utils.addSignatureDataToAbi)(abi));
+  abi = (0, _utils.addSignatureDataToAbi)(abi);
 
   const getEventAbi = (topics) => {
     topics = [...topics];
@@ -59,6 +59,9 @@ function EventDecoder(abi, logger) {
 
   const decodeLog = (log) => {
     try {
+      const { eventABI } = getEventAbi(log.topics);
+      if (!eventABI) return log;
+      const contractInterface = new _abi.Interface([eventABI]);
       const { eventFragment, name, args, topic } = contractInterface.parseLog(log);
 
       const { address } = log;
