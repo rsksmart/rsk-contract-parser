@@ -31,6 +31,8 @@ const ERC1167_RUNTIME_CODES = [
 /^0x3d3d3d3d363d3d37363d73([0-9a-f]{40})5af43d3d93803e602a57fd5bf3$/i];
 
 
+const KEY_IMPLEMENTATION_SLOT = (0, _rskUtils.add0x)((0, _rskUtils.keccak256)('key.implementation'));
+
 /**
  * The ContractParser class handles the analysis and interpretation of Ethereum smart contracts.
  *
@@ -513,6 +515,23 @@ class ContractParser {
 
       // Normal contracts
       const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractAddress, blockNumber, contractByteCode);
+
+      if (!interfaces.length) {
+        const keyImplementationProxyDetails = await this.isKeyImplementationSlotProxy(contractAddress, blockNumber);
+        if (keyImplementationProxyDetails.isProxy) {
+          contractDetails.isProxy = true;
+          contractDetails.implementationAddress = keyImplementationProxyDetails.implementationAddress;
+          contractDetails.proxyType = keyImplementationProxyDetails.proxyType;
+          if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
+            const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber);
+            contractDetails.methods = methods;
+            contractDetails.interfaces = interfaces;
+          }
+
+          return contractDetails;
+        }
+      }
+
       contractDetails.methods = methods;
       contractDetails.interfaces = interfaces;
 
@@ -735,6 +754,31 @@ class ContractParser {
     }
 
     // Not a proxy contract
+    return result;
+  }
+
+  async isKeyImplementationSlotProxy(contractAddress, blockNumber = 'latest') {
+    const result = {
+      address: contractAddress,
+      isProxy: false,
+      implementationAddress: null,
+      proxyType: null
+    };
+
+    let implementationSlotValue;
+    try {
+      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, KEY_IMPLEMENTATION_SLOT, blockNumber);
+    } catch (err) {
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${_types.PROXY_TYPES.KeyImplementationSlot}: ${err}`);
+      return Promise.reject(err);
+    }
+
+    if ((0, _utils.notZero)(implementationSlotValue)) {
+      result.proxyType = _types.PROXY_TYPES.KeyImplementationSlot;
+      result.isProxy = true;
+      result.implementationAddress = (0, _utils.formatAddressFromSlot)(implementationSlotValue);
+    }
+
     return result;
   }
 

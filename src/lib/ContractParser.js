@@ -1,5 +1,5 @@
 import interfacesIds from './interfacesIds'
-import { includesAll } from '@rsksmart/rsk-utils'
+import { includesAll, keccak256, add0x } from '@rsksmart/rsk-utils'
 import NativeContractsDecoder from './nativeContracts/NativeContractsDecoder'
 import NativeContracts from './nativeContracts/NativeContracts'
 import Contract from './Contract'
@@ -30,6 +30,8 @@ const ERC1167_RUNTIME_CODES = [
   /^0x363d3d373d3d3d363d73([0-9a-f]{40})5af43d82803e903d91602b57fd5bf3$/i,
   /^0x3d3d3d3d363d3d37363d73([0-9a-f]{40})5af43d3d93803e602a57fd5bf3$/i
 ]
+
+const KEY_IMPLEMENTATION_SLOT = add0x(keccak256('key.implementation'))
 
 /**
  * The ContractParser class handles the analysis and interpretation of Ethereum smart contracts.
@@ -513,6 +515,23 @@ export class ContractParser {
 
       // Normal contracts
       const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractAddress, blockNumber, contractByteCode)
+
+      if (!interfaces.length) {
+        const keyImplementationProxyDetails = await this.isKeyImplementationSlotProxy(contractAddress, blockNumber)
+        if (keyImplementationProxyDetails.isProxy) {
+          contractDetails.isProxy = true
+          contractDetails.implementationAddress = keyImplementationProxyDetails.implementationAddress
+          contractDetails.proxyType = keyImplementationProxyDetails.proxyType
+          if (isAddress(contractDetails.implementationAddress)) {
+            const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
+            contractDetails.methods = methods
+            contractDetails.interfaces = interfaces
+          }
+
+          return contractDetails
+        }
+      }
+
       contractDetails.methods = methods
       contractDetails.interfaces = interfaces
 
@@ -735,6 +754,31 @@ export class ContractParser {
     }
 
     // Not a proxy contract
+    return result
+  }
+
+  async isKeyImplementationSlotProxy (contractAddress, blockNumber = 'latest') {
+    const result = {
+      address: contractAddress,
+      isProxy: false,
+      implementationAddress: null,
+      proxyType: null
+    }
+
+    let implementationSlotValue
+    try {
+      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, KEY_IMPLEMENTATION_SLOT, blockNumber)
+    } catch (err) {
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.KeyImplementationSlot}: ${err}`)
+      return Promise.reject(err)
+    }
+
+    if (notZero(implementationSlotValue)) {
+      result.proxyType = PROXY_TYPES.KeyImplementationSlot
+      result.isProxy = true
+      result.implementationAddress = formatAddressFromSlot(implementationSlotValue)
+    }
+
     return result
   }
 

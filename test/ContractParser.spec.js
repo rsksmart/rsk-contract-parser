@@ -975,6 +975,65 @@ describe('Contract parser', function () {
     })
   })
 
+  describe('22) isKeyImplementationSlotProxy()', function () {
+    this.timeout(60000)
+
+    const keyImplementationSlot = '0x950d7e977b74051843ed988c77d53a700cd967d2ac5480d98dd4c1edaf0b4dc8'
+    const implementation = '0x1234567890123456789012345678901234567890'
+    const erc20Code = `0x${['06fdde03', '95d89b41', '313ce567', '18160ddd', '70a08231', 'dd62ed3e', 'a9059cbb', '095ea7b3', '23b872dd'].map(selector => `63${selector}`).join('')}`
+    const slotNod3 = (slots, { proxyCode = '0x6080604052' } = {}) => ({
+      eth: {
+        requestedSlots: [],
+        getStorageAt (address, slot) {
+          this.requestedSlots.push(slot)
+          return Promise.resolve(slots[slot] ?? `0x${'0'.repeat(64)}`)
+        },
+        getContractCodeAt (address) { return Promise.resolve(address === implementation ? erc20Code : proxyCode) },
+        call () { return Promise.resolve(`0x${'0'.repeat(64)}`) }
+      }
+    })
+
+    it('should read the keccak256("key.implementation") slot and return its implementation', async () => {
+      const nod3 = slotNod3({ [keyImplementationSlot]: `0x${'0'.repeat(24)}${implementation.slice(2)}` })
+      const parser = new ContractParser({ nod3 })
+      const proxyDetails = await parser.isKeyImplementationSlotProxy('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')
+
+      expect(nod3.eth.requestedSlots).to.deep.equal([keyImplementationSlot])
+      expect(proxyDetails.isProxy).to.equal(true)
+      expect(proxyDetails.proxyType).to.equal(PROXY_TYPES.KeyImplementationSlot)
+      expect(proxyDetails.implementationAddress).to.equal(implementation)
+    })
+
+    it('getContractDetails() should report a key.implementation proxy that no other proxy check matches', async () => {
+      const nod3 = slotNod3({ [keyImplementationSlot]: `0x${'0'.repeat(24)}${implementation.slice(2)}` })
+      const parser = new ContractParser({ nod3 })
+      const contractDetails = await parser.getContractDetails('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')
+
+      expect(contractDetails.isProxy).to.equal(true)
+      expect(contractDetails.proxyType).to.equal(PROXY_TYPES.KeyImplementationSlot)
+      expect(contractDetails.implementationAddress).to.equal(implementation)
+      expect(contractDetails.interfaces).to.include(contractsInterfaces.ERC20)
+      expect(contractDetails.methods).to.include('transfer(address,uint256)')
+    })
+
+    it('getContractDetails() should not read the slot of a contract its own bytecode already classifies', async () => {
+      const nod3 = slotNod3({ [keyImplementationSlot]: `0x${'0'.repeat(24)}${implementation.slice(2)}` }, { proxyCode: erc20Code })
+      const contractDetails = await new ContractParser({ nod3 }).getContractDetails('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')
+
+      expect(nod3.eth.requestedSlots).to.not.include(keyImplementationSlot)
+      expect(contractDetails.isProxy).to.equal(false)
+      expect(contractDetails.interfaces).to.include(contractsInterfaces.ERC20)
+    })
+
+    it('should return empty proxy details when the slot is zero', async () => {
+      const parser = new ContractParser({ nod3: slotNod3({}) })
+      const proxyDetails = await parser.isKeyImplementationSlotProxy('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')
+
+      expect(proxyDetails.isProxy).to.equal(false)
+      expect(proxyDetails.implementationAddress).to.equal(null)
+    })
+  })
+
   describe('23) ERC-165 probe', function () {
     const probeNod3 = (code, supported = ['01ffc9a7', '80ac58cd']) => ({
       eth: {
