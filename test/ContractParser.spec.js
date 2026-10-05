@@ -28,6 +28,13 @@ const getNod3Instance = (network) => {
   return nod3Connect('https://public-node.testnet.rsk.co')
 }
 
+const ERC1967_IMPLEMENTATION_SLOT = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+
+const erc1967ImplementationAt = async ({ network, address }) => {
+  const slotValue = await getNod3Instance(network).eth.getStorageAt(address, ERC1967_IMPLEMENTATION_SLOT, 'latest')
+  return `0x${slotValue.slice(-40)}`
+}
+
 describe('Contract parser', function () {
   describe('0) Network check', function () {
     it('should connect to public RSK testnet', async function () {
@@ -446,7 +453,6 @@ describe('Contract parser', function () {
   describe('15) getStorageSlotValueFromNode()', () => {
     it('should return the slot value from node', async () => {
       const nod3 = getNod3Instance(USDRIF.network)
-      const ERC1967_IMPLEMENTATION_SLOT = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
       const parser = new ContractParser({ nod3 })
       const value = await parser.getStorageSlotValueFromNode(USDRIF.address, ERC1967_IMPLEMENTATION_SLOT)
 
@@ -524,7 +530,7 @@ describe('Contract parser', function () {
       expect(address).to.equal(USDRIF.address)
       expect(isProxy).to.equal(true)
       expect(proxyType).to.equal(PROXY_TYPES.ERC1967.Normal)
-      expect(implementationAddress).to.equal(USDRIF.proxyDetails.implementationAddress)
+      expect(implementationAddress).to.equal(await erc1967ImplementationAt(USDRIF))
       expect(beaconAddress).to.equal(null)
     })
 
@@ -624,7 +630,7 @@ describe('Contract parser', function () {
         expectedContractDetails: {
           address: USDRIF.address,
           isProxy: true,
-          implementationAddress: USDRIF.proxyDetails.implementationAddress,
+          implementationAddress: () => erc1967ImplementationAt(USDRIF),
           beaconAddress: null,
           proxyType: PROXY_TYPES.ERC1967.Normal,
           unverifiedMethods: USDRIF.proxyDetails.unverifiedImplementationMethods,
@@ -654,6 +660,9 @@ describe('Contract parser', function () {
         }
       }
     ]
+
+    const expectedImplementationAddress = ({ implementationAddress }) =>
+      typeof implementationAddress === 'function' ? implementationAddress() : implementationAddress
 
     for (const { contract, expectedContractDetails } of testCases) {
       describe(`${contract.name} ${contract.address} (${contract.network})`, () => {
@@ -695,7 +704,7 @@ describe('Contract parser', function () {
           expect(address, 'address should be equal').to.equal(expectedContractDetails.address)
           expect(isProxy, 'isProxy should be equal').to.equal(expectedContractDetails.isProxy)
           expect(proxyType, 'proxyType should be equal').to.equal(expectedContractDetails.proxyType)
-          expect(implementationAddress, 'implementationAddress should be equal').to.equal(expectedContractDetails.implementationAddress)
+          expect(implementationAddress, 'implementationAddress should be equal').to.equal(await expectedImplementationAddress(expectedContractDetails))
           expect(beaconAddress, 'beaconAddress should be equal').to.equal(expectedContractDetails.beaconAddress)
 
           // Methods
@@ -741,7 +750,7 @@ describe('Contract parser', function () {
           expect(address, 'address should be equal').to.equal(expectedContractDetails.address)
           expect(isProxy, 'isProxy should be equal').to.equal(expectedContractDetails.isProxy)
           expect(proxyType, 'proxyType should be equal').to.equal(expectedContractDetails.proxyType)
-          expect(implementationAddress, 'implementationAddress should be equal').to.equal(expectedContractDetails.implementationAddress)
+          expect(implementationAddress, 'implementationAddress should be equal').to.equal(await expectedImplementationAddress(expectedContractDetails))
           expect(beaconAddress, 'beaconAddress should be equal').to.equal(expectedContractDetails.beaconAddress)
 
           // Methods
