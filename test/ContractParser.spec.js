@@ -1012,6 +1012,13 @@ describe('Contract parser', function () {
       expect(interfaces).to.deep.equal([])
     })
 
+    it('asks for ERC721 when the scan found supportsInterface and an ERC-721 extension but not ERC721', async () => {
+      const nod3 = probeNod3('0x6301ffc9a76306fdde036395d89b4163c87b56dd')
+      const { interfaces } = await new ContractParser({ nod3 }).getContractDetails(address)
+
+      expect(interfaces).to.include.members(['ERC721Metadata', contractsInterfaces.ERC721])
+    })
+
     it('does not ask for ERC721 when the scan found supportsInterface and no ERC-721 extension', async () => {
       const nod3 = probeNod3('0x6301ffc9a7')
       const { interfaces } = await new ContractParser({ nod3 }).getContractDetails(address)

@@ -373,7 +373,8 @@ class ContractParser {
    *
    * Bytecode selector scanning misses contracts whose dispatcher doesn't embed
    * selectors literally, so some interfaces get settled by asking the contract itself:
-   * those flagged with erc165 in interfacesIds and, when the scan found no
+   * those flagged with erc165 in interfacesIds, those flagged with erc165WithExtensions
+   * when one of the listed extensions was detected, and, when the scan found no
    * selectors at all, those flagged with erc165WithoutSelectors.
    * Contracts answering true to 0xffffffff violate ERC-165 and are ignored.
    *
@@ -385,9 +386,10 @@ class ContractParser {
    */
   async getInterfacesByERC165Calls(address, blockNumber = 'latest', detectedInterfaces = [], withoutSelectors = false) {
     const candidates = Object.entries(_interfacesIds.default).
-    filter(([name, { erc165, erc165WithoutSelectors }]) => {
+    filter(([name, { erc165, erc165WithoutSelectors, erc165WithExtensions }]) => {
       if (detectedInterfaces.includes(_types.contractsInterfaces[name] || name)) return false;
-      return withoutSelectors ? erc165WithoutSelectors : erc165;
+      if (withoutSelectors) return erc165WithoutSelectors;
+      return erc165 || erc165WithExtensions.some((extension) => detectedInterfaces.includes(extension));
     });
     if (!candidates.length) return [];
 
