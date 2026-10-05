@@ -982,11 +982,12 @@ describe('Contract parser', function () {
     const implementation = '0x1234567890123456789012345678901234567890'
     const erc20Code = `0x${['06fdde03', '95d89b41', '313ce567', '18160ddd', '70a08231', 'dd62ed3e', 'a9059cbb', '095ea7b3', '23b872dd'].map(selector => `63${selector}`).join('')}`
     const erc721Code = `0x${['01ffc9a7', '70a08231', '6352211e', '095ea7b3', '081812fc', 'a22cb465', 'e985e9c5', '23b872dd', '42842e0e', 'b88d4fde'].map(selector => `63${selector}`).join('')}`
-    const slotNod3 = (slots, { proxyCode = '0x6080604052', implementationCode = erc20Code, supported = [] } = {}) => ({
+    const slotNod3 = (slots, { proxyCode = '0x6080604052', implementationCode = erc20Code, supported = [], rejectedSlot } = {}) => ({
       eth: {
         requestedSlots: [],
         getStorageAt (address, slot) {
           this.requestedSlots.push(slot)
+          if (slot === rejectedSlot) return Promise.reject(new Error('ECONNRESET'))
           return Promise.resolve(slots[slot] ?? `0x${'0'.repeat(64)}`)
         },
         getContractCodeAt (address) { return Promise.resolve(address === implementation ? implementationCode : proxyCode) },
@@ -1035,6 +1036,24 @@ describe('Contract parser', function () {
       expect(nod3.eth.requestedSlots).to.not.include(keyImplementationSlot)
       expect(contractDetails.isProxy).to.equal(false)
       expect(contractDetails.interfaces).to.include(contractsInterfaces.ERC20)
+    })
+
+    it('getContractDetails() should read the slot of code whose selectors match no interface', async () => {
+      const nod3 = slotNod3({ [keyImplementationSlot]: `0x${'0'.repeat(24)}${implementation.slice(2)}` }, { proxyCode: '0x63a9059cbb' })
+      const contractDetails = await new ContractParser({ nod3 }).getContractDetails('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')
+
+      expect(contractDetails.isProxy).to.equal(true)
+      expect(contractDetails.implementationAddress).to.equal(implementation)
+      expect(contractDetails.interfaces).to.include(contractsInterfaces.ERC20)
+    })
+
+    it('getContractDetails() should reject when the slot read of an unclassified contract fails', async () => {
+      const nod3 = slotNod3({}, { rejectedSlot: keyImplementationSlot })
+      const outcome = await new ContractParser({ nod3, log: { error () {}, warn () {} } })
+        .getContractDetails('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')
+        .then(() => 'resolved', error => error.message)
+
+      expect(outcome).to.equal('ECONNRESET')
     })
 
     it('should return empty proxy details when the slot is zero', async () => {
