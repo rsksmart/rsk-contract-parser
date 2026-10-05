@@ -26,6 +26,11 @@ var _utils = require("./utils");
 
 var _addresses2 = require("@rsksmart/rsk-utils/dist/addresses");function _interopRequireDefault(e) {return e && e.__esModule ? e : { default: e };}
 
+const ERC1167_RUNTIME_CODES = [
+/^0x363d3d373d3d3d363d73([0-9a-f]{40})5af43d82803e903d91602b57fd5bf3$/i,
+/^0x3d3d3d3d363d3d37363d73([0-9a-f]{40})5af43d3d93803e602a57fd5bf3$/i];
+
+
 /**
  * The ContractParser class handles the analysis and interpretation of Ethereum smart contracts.
  *
@@ -512,9 +517,6 @@ class ContractParser {
 
   /**
    * Checks if the contract is an ERC1167 minimal proxy.
-   * The whole runtime bytecode is a fixed 45-byte delegatecall forwarder with
-   * the implementation address embedded at bytes 10-29, so detection is a
-   * bytecode pattern match — minimal proxies keep no storage slots.
    * @param {string} contractAddress - The address of the contract
    * @param {number | string} [blockNumber] - Optional. Retrieve proxy details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
    * @param {string} [contractByteCode] - Optional. Preloaded runtime bytecode, skips the node fetch.
@@ -544,7 +546,7 @@ class ContractParser {
       }
     }
 
-    const match = /^0x363d3d373d3d3d363d73([0-9a-f]{40})5af43d82803e903d91602b57fd5bf3$/i.exec(code || '');
+    const match = ERC1167_RUNTIME_CODES.map((runtimeCode) => runtimeCode.exec(code || '')).find(Boolean);
     if (match) {
       result.isProxy = true;
       result.proxyType = _types.PROXY_TYPES.ERC1167;

@@ -906,6 +906,21 @@ describe('Contract parser', function () {
       expect(proxyDetails.implementationAddress).to.equal(null)
     })
 
+    it('should return ERC1167 proxy details for the 44-byte minimal proxy variant', async () => {
+      const mockNod3 = {
+        eth: {
+          getContractCodeAt: function () { return Promise.resolve(`0x3d3d3d3d363d3d37363d73${implementation.slice(2)}5af43d3d93803e602a57fd5bf3`) }
+        }
+      }
+
+      const parser = new ContractParser({ nod3: mockNod3 })
+      const proxyDetails = await parser.isERC1167Proxy('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')
+
+      expect(proxyDetails.isProxy).to.equal(true)
+      expect(proxyDetails.proxyType).to.equal(PROXY_TYPES.ERC1167)
+      expect(proxyDetails.implementationAddress).to.equal(implementation)
+    })
+
     it('should reject bytecode with a proxy-like prefix but trailing code', async () => {
       const mockNod3 = {
         eth: {
@@ -945,6 +960,18 @@ describe('Contract parser', function () {
         contractsInterfaces.ERC1155,
         'ERC1155MetadataURI'
       ])
+    })
+
+    const room1 = '0x1f0b19c7b76fe644797603daba7de4523c26bad2'
+
+    it(`getContractDetails() should resolve ERC721 through the 44-byte minimal proxy ROOM1 ${room1} (mainnet)`, async () => {
+      const parser = new ContractParser({ nod3: getNod3Instance('mainnet') })
+      const contractDetails = await parser.getContractDetails(room1)
+
+      expect(contractDetails.isProxy).to.equal(true)
+      expect(contractDetails.proxyType).to.equal(PROXY_TYPES.ERC1167)
+      expect(contractDetails.implementationAddress).to.equal('0x0000000000a492d5b29b3191f028d5a9a848911a')
+      expect(contractDetails.interfaces).to.include.members([contractsInterfaces.ERC1167, contractsInterfaces.ERC721])
     })
   })
 })
