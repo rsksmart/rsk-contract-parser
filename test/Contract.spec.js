@@ -5,6 +5,7 @@ import defaultABI from '../src/lib/Abi'
 const ADDR = '0x1111111111111111111111111111111111111111'
 const ID = '42'
 const WORD_1 = `0x${'0'.repeat(63)}1`
+const WORD_5 = `0x${'0'.repeat(63)}5`
 
 describe('# Contract overloaded-method resolution', function () {
   const contract = new Contract(defaultABI)
@@ -19,9 +20,22 @@ describe('# Contract overloaded-method resolution', function () {
       .to.equal(contract.encodeCall('balanceOf(address,uint256)', [ADDR, ID]))
   })
 
-  it('throws naming both signatures when arity cannot disambiguate', () => {
-    expect(() => contract.decodeCall('balanceOf', '0x'))
+  it('throws naming both signatures when arity cannot disambiguate an encode', () => {
+    expect(() => contract.encodeCall('balanceOf', []))
       .to.throw('Ambiguous method "balanceOf" — pass the signature: balanceOf(address) | balanceOf(address,uint256)')
+  })
+
+  it('decodes a bare overloaded name whose overloads return the same types', () => {
+    expect(contract.decodeCall('balanceOf', WORD_5).toString()).to.equal('5')
+  })
+
+  it('throws naming every overload when a bare name\'s overloads return different types', () => {
+    expect(() => contract.decodeCall('transfer', WORD_1))
+      .to.throw('Ambiguous method "transfer" — its overloads return different types, pass the signature or the params: transfer(address,address,uint256) | transfer(address,uint256) | transfer()')
+  })
+
+  it('resolves overloads returning different types by the arity of params', () => {
+    expect(contract.decodeCall('transfer', WORD_1, [ADDR, ID])).to.equal(true)
   })
 
   it('keeps the first definition of a signature the default ABI defines twice with different outputs', async () => {
