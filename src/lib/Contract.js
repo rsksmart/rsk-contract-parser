@@ -1,4 +1,17 @@
-import { FunctionFragment, Interface } from '@ethersproject/abi'
+import { Fragment, FunctionFragment, Interface } from '@ethersproject/abi'
+
+const firstFunctionPerSignature = abi => {
+  const bySignature = new Map()
+  for (const definition of abi) {
+    const fragment = Fragment.from(definition)
+    if (fragment?.type !== 'function') continue
+    const signature = fragment.format()
+    if (!bySignature.has(signature)) bySignature.set(signature, fragment)
+  }
+  return [...bySignature.values()]
+}
+
+const functionsInterface = abi => new Interface(Array.isArray(abi) ? firstFunctionPerSignature(abi) : abi)
 
 /**
  * Contract class allows interaction with a contract on the blockchain.
@@ -18,7 +31,7 @@ export default class Contract {
     this.abi = abi
     this.address = address
     this.nod3 = nod3
-    this.contractInterface = new Interface(abi)
+    this.contractInterface = functionsInterface(abi)
   }
 
   /**
@@ -59,7 +72,7 @@ export default class Contract {
    */
   setAbi (newAbi) {
     this.abi = newAbi
-    this.contractInterface = new Interface(newAbi)
+    this.contractInterface = functionsInterface(newAbi)
   }
 
   /**
