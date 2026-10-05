@@ -981,15 +981,16 @@ describe('Contract parser', function () {
     const keyImplementationSlot = '0x950d7e977b74051843ed988c77d53a700cd967d2ac5480d98dd4c1edaf0b4dc8'
     const implementation = '0x1234567890123456789012345678901234567890'
     const erc20Code = `0x${['06fdde03', '95d89b41', '313ce567', '18160ddd', '70a08231', 'dd62ed3e', 'a9059cbb', '095ea7b3', '23b872dd'].map(selector => `63${selector}`).join('')}`
-    const slotNod3 = (slots, { proxyCode = '0x6080604052' } = {}) => ({
+    const erc721Code = `0x${['01ffc9a7', '70a08231', '6352211e', '095ea7b3', '081812fc', 'a22cb465', 'e985e9c5', '23b872dd', '42842e0e', 'b88d4fde'].map(selector => `63${selector}`).join('')}`
+    const slotNod3 = (slots, { proxyCode = '0x6080604052', implementationCode = erc20Code, supported = [] } = {}) => ({
       eth: {
         requestedSlots: [],
         getStorageAt (address, slot) {
           this.requestedSlots.push(slot)
           return Promise.resolve(slots[slot] ?? `0x${'0'.repeat(64)}`)
         },
-        getContractCodeAt (address) { return Promise.resolve(address === implementation ? erc20Code : proxyCode) },
-        call () { return Promise.resolve(`0x${'0'.repeat(64)}`) }
+        getContractCodeAt (address) { return Promise.resolve(address === implementation ? implementationCode : proxyCode) },
+        call (tx) { return Promise.resolve(`0x${'0'.repeat(63)}${supported.includes(tx.data.slice(10, 18)) ? 1 : 0}`) }
       }
     })
 
@@ -1014,6 +1015,17 @@ describe('Contract parser', function () {
       expect(contractDetails.implementationAddress).to.equal(implementation)
       expect(contractDetails.interfaces).to.include(contractsInterfaces.ERC20)
       expect(contractDetails.methods).to.include('transfer(address,uint256)')
+    })
+
+    it('getContractDetails() should resolve a selector-less proxy whose implementation answers ERC-165 through it', async () => {
+      const nod3 = slotNod3({ [keyImplementationSlot]: `0x${'0'.repeat(24)}${implementation.slice(2)}` }, { implementationCode: erc721Code, supported: ['01ffc9a7', '80ac58cd'] })
+      const contractDetails = await new ContractParser({ nod3 }).getContractDetails('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')
+
+      expect(contractDetails.isProxy).to.equal(true)
+      expect(contractDetails.proxyType).to.equal(PROXY_TYPES.KeyImplementationSlot)
+      expect(contractDetails.implementationAddress).to.equal(implementation)
+      expect(contractDetails.interfaces).to.include.members([contractsInterfaces.ERC165, contractsInterfaces.ERC721])
+      expect(contractDetails.methods).to.include('ownerOf(uint256)')
     })
 
     it('getContractDetails() should not read the slot of a contract its own bytecode already classifies', async () => {

@@ -513,24 +513,13 @@ class ContractParser {
         return contractDetails;
       }
 
+      const withoutSelectors = this.getMethodsFromContractByteCode(contractByteCode).length === 0;
+      if (withoutSelectors && (await this.#resolveKeyImplementationProxy(contractDetails, blockNumber))) return contractDetails;
+
       // Normal contracts
       const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractAddress, blockNumber, contractByteCode);
 
-      if (!interfaces.length) {
-        const keyImplementationProxyDetails = await this.isKeyImplementationSlotProxy(contractAddress, blockNumber);
-        if (keyImplementationProxyDetails.isProxy) {
-          contractDetails.isProxy = true;
-          contractDetails.implementationAddress = keyImplementationProxyDetails.implementationAddress;
-          contractDetails.proxyType = keyImplementationProxyDetails.proxyType;
-          if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
-            const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber);
-            contractDetails.methods = methods;
-            contractDetails.interfaces = interfaces;
-          }
-
-          return contractDetails;
-        }
-      }
+      if (!withoutSelectors && !interfaces.length && (await this.#resolveKeyImplementationProxy(contractDetails, blockNumber))) return contractDetails;
 
       contractDetails.methods = methods;
       contractDetails.interfaces = interfaces;
@@ -755,6 +744,21 @@ class ContractParser {
 
     // Not a proxy contract
     return result;
+  }
+
+  async #resolveKeyImplementationProxy(contractDetails, blockNumber) {
+    const proxyDetails = await this.isKeyImplementationSlotProxy(contractDetails.address, blockNumber);
+    if (!proxyDetails.isProxy) return false;
+
+    contractDetails.isProxy = true;
+    contractDetails.implementationAddress = proxyDetails.implementationAddress;
+    contractDetails.proxyType = proxyDetails.proxyType;
+    if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
+      const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber);
+      contractDetails.methods = methods;
+      contractDetails.interfaces = interfaces;
+    }
+    return true;
   }
 
   async isKeyImplementationSlotProxy(contractAddress, blockNumber = 'latest') {
