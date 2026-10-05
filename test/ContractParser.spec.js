@@ -974,4 +974,50 @@ describe('Contract parser', function () {
       expect(contractDetails.interfaces).to.include.members([contractsInterfaces.ERC1167, contractsInterfaces.ERC721])
     })
   })
+
+  describe('23) ERC-165 probe', function () {
+    const probeNod3 = (code, supported = ['01ffc9a7', '80ac58cd']) => ({
+      eth: {
+        calls: [],
+        getContractCodeAt () { return Promise.resolve(code) },
+        getStorageAt () { return Promise.resolve(`0x${'0'.repeat(64)}`) },
+        call (tx) {
+          this.calls.push(tx.data)
+          const interfaceId = tx.data.slice(10, 18)
+          return Promise.resolve(`0x${'0'.repeat(63)}${supported.includes(interfaceId) ? 1 : 0}`)
+        }
+      }
+    })
+    const address = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+
+    it('confirms ERC721 through supportsInterface on code with no known selector', async () => {
+      const nod3 = probeNod3('0x6080604052')
+      const { interfaces } = await new ContractParser({ nod3 }).getContractDetails(address)
+
+      expect(interfaces).to.include(contractsInterfaces.ERC721)
+      expect(interfaces).to.not.include(contractsInterfaces.ERC1155)
+    })
+
+    it('makes no call for code whose selectors do not include supportsInterface', async () => {
+      const nod3 = probeNod3('0x63a9059cbb')
+      await new ContractParser({ nod3 }).getContractDetails(address)
+
+      expect(nod3.eth.calls).to.deep.equal([])
+    })
+
+    it('ignores a contract that answers true to every interface id, 0xffffffff included', async () => {
+      const nod3 = probeNod3('0x6080604052', ['01ffc9a7', 'ffffffff', '80ac58cd', 'd9b67a26', '0e89341c'])
+      const { interfaces } = await new ContractParser({ nod3 }).getContractDetails(address)
+
+      expect(interfaces).to.deep.equal([])
+    })
+
+    it('does not ask for ERC721 when the scan found supportsInterface and no ERC-721 extension', async () => {
+      const nod3 = probeNod3('0x6301ffc9a7')
+      const { interfaces } = await new ContractParser({ nod3 }).getContractDetails(address)
+
+      expect(nod3.eth.calls.map(data => data.slice(10, 18))).to.not.include('80ac58cd')
+      expect(interfaces).to.not.include(contractsInterfaces.ERC721)
+    })
+  })
 })

@@ -357,8 +357,9 @@ class ContractParser {
     const methods = this.getMethodsFromContractByteCode(contractByteCode);
     const interfaces = this.getInterfacesByMethods(methods);
 
-    if (methods.includes('supportsInterface(bytes4)')) {
-      const confirmed = await this.getInterfacesByERC165Calls(address, blockNumber, interfaces);
+    const withoutSelectors = methods.length === 0;
+    if (withoutSelectors || methods.includes('supportsInterface(bytes4)')) {
+      const confirmed = await this.getInterfacesByERC165Calls(address, blockNumber, interfaces, withoutSelectors);
       for (const name of confirmed) {
         if (!interfaces.includes(name)) interfaces.push(name);
       }
@@ -371,18 +372,23 @@ class ContractParser {
    * Confirms interfaces via on-chain ERC-165 supportsInterface calls.
    *
    * Bytecode selector scanning misses contracts whose dispatcher doesn't embed
-   * selectors literally, so interfaces whose standard mandates ERC-165 (flagged
-   * with erc165 in interfacesIds) get settled by asking the contract itself.
+   * selectors literally, so some interfaces get settled by asking the contract itself:
+   * those flagged with erc165 in interfacesIds and, when the scan found no
+   * selectors at all, those flagged with erc165WithoutSelectors.
    * Contracts answering true to 0xffffffff violate ERC-165 and are ignored.
    *
    * @param {string} address - The contract address
    * @param {number | string} [blockNumber] - Optional. Can be a block number or a tag. Defaults to tag 'latest'.
    * @param {string[]} [detectedInterfaces] - Interfaces already detected, skipped here
+   * @param {boolean} [withoutSelectors] - Whether the bytecode scan found no selectors. Defaults to false.
    * @returns {Promise<string[]>} The confirmed interface names
    */
-  async getInterfacesByERC165Calls(address, blockNumber = 'latest', detectedInterfaces = []) {
+  async getInterfacesByERC165Calls(address, blockNumber = 'latest', detectedInterfaces = [], withoutSelectors = false) {
     const candidates = Object.entries(_interfacesIds.default).
-    filter(([name, { erc165 }]) => erc165 && !detectedInterfaces.includes(_types.contractsInterfaces[name] || name));
+    filter(([name, { erc165, erc165WithoutSelectors }]) => {
+      if (detectedInterfaces.includes(_types.contractsInterfaces[name] || name)) return false;
+      return withoutSelectors ? erc165WithoutSelectors : erc165;
+    });
     if (!candidates.length) return [];
 
     const contract = new _Contract.default(_ERC.default, { address, nod3: this.nod3 });

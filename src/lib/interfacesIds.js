@@ -30,7 +30,7 @@ export const interfacesIds = {
     'transferFrom(address,address,uint256)',
     'safeTransferFrom(address,address,uint256)',
     'safeTransferFrom(address,address,uint256,bytes)'
-  ]),
+  ], { erc165WithoutSelectors: true }),
   ERC721Enumerable: makeInterface([
     'totalSupply()',
     'tokenOfOwnerByIndex(address,uint256)',
@@ -59,9 +59,9 @@ export const interfacesIds = {
   ], { erc165: true })
 }
 
-function makeInterface (methods, { erc165 = false } = {}) {
+function makeInterface (methods, { erc165 = false, erc165WithoutSelectors = erc165 } = {}) {
   const id = erc165IdFromMethods(methods)
-  return { methods, id, erc165 }
+  return { methods, id, erc165, erc165WithoutSelectors }
 }
 
 export default interfacesIds
