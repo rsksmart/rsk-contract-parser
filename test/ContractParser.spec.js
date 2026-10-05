@@ -1086,6 +1086,7 @@ describe('Contract parser', function () {
 
       expect(interfaces).to.include(contractsInterfaces.ERC721)
       expect(interfaces).to.not.include(contractsInterfaces.ERC1155)
+      expect(nod3.eth.calls.map(data => data.slice(10, 18))).to.deep.equal(['01ffc9a7', 'ffffffff', '80ac58cd', 'd9b67a26', '0e89341c'])
     })
 
     it('makes no call for code whose selectors do not include supportsInterface', async () => {
@@ -1107,6 +1108,13 @@ describe('Contract parser', function () {
       const { interfaces } = await new ContractParser({ nod3 }).getContractDetails(address)
 
       expect(interfaces).to.include.members(['ERC721Metadata', contractsInterfaces.ERC721])
+    })
+
+    it('asks for ERC721 when the scan found supportsInterface and only the enumerable extension', async () => {
+      const nod3 = probeNod3('0x6301ffc9a76318160ddd632f745c59634f6ccce7')
+      const { interfaces } = await new ContractParser({ nod3 }).getContractDetails(address)
+
+      expect(interfaces).to.include.members(['ERC721Enumerable', contractsInterfaces.ERC721])
     })
 
     it('does not ask for ERC721 when the scan found supportsInterface and no ERC-721 extension', async () => {
