@@ -1180,24 +1180,22 @@ describe('Contract parser', function () {
       expect(nod3.eth.callTargets).to.not.include(implementation)
     })
 
-    it('asks an ERC-1967 proxy, not its implementation', async () => {
-      const slots = { '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc': addressSlot }
-      const nod3 = proxyNod3({ proxyCode: '0x6080604052', slots, proxySupports: ['01ffc9a7', '80ac58cd'], implementationSupports: ['01ffc9a7'] })
-      const contractDetails = await new ContractParser({ nod3 }).getContractDetails(proxy)
+    const slotProxies = [
+      { name: 'an ERC-1822', slot: '0xc5f16f0fcc639fa48a6947836d9850f504798523bf8c9a3a87d5876cf622bcf7', proxyType: PROXY_TYPES.ERC1822 },
+      { name: 'an ERC-1967', slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc', proxyType: PROXY_TYPES.ERC1967.Normal },
+      { name: 'an OZ unstructured storage', slot: '0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3', proxyType: PROXY_TYPES.OZUnstructuredStorage },
+      { name: 'a key.implementation', slot: '0x950d7e977b74051843ed988c77d53a700cd967d2ac5480d98dd4c1edaf0b4dc8', proxyType: PROXY_TYPES.KeyImplementationSlot }
+    ]
 
-      expect(contractDetails.proxyType).to.equal(PROXY_TYPES.ERC1967.Normal)
-      expect(contractDetails.interfaces).to.include(contractsInterfaces.ERC721)
-      expect(nod3.eth.callTargets).to.not.include(implementation)
-    })
+    for (const { name, slot, proxyType } of slotProxies) {
+      it(`asks ${name} proxy, not its implementation`, async () => {
+        const nod3 = proxyNod3({ proxyCode: '0x6080604052', slots: { [slot]: addressSlot }, proxySupports: ['01ffc9a7', '80ac58cd'], implementationSupports: ['01ffc9a7'] })
+        const contractDetails = await new ContractParser({ nod3 }).getContractDetails(proxy)
 
-    it('asks a key.implementation proxy, not its implementation', async () => {
-      const slots = { '0x950d7e977b74051843ed988c77d53a700cd967d2ac5480d98dd4c1edaf0b4dc8': addressSlot }
-      const nod3 = proxyNod3({ proxyCode: '0x6080604052', slots, proxySupports: ['01ffc9a7', '80ac58cd'], implementationSupports: ['01ffc9a7'] })
-      const contractDetails = await new ContractParser({ nod3 }).getContractDetails(proxy)
-
-      expect(contractDetails.proxyType).to.equal(PROXY_TYPES.KeyImplementationSlot)
-      expect(contractDetails.interfaces).to.include(contractsInterfaces.ERC721)
-      expect(nod3.eth.callTargets).to.not.include(implementation)
-    })
+        expect(contractDetails.proxyType).to.equal(proxyType)
+        expect(contractDetails.interfaces).to.include(contractsInterfaces.ERC721)
+        expect(nod3.eth.callTargets).to.not.include(implementation)
+      })
+    }
   })
 })
