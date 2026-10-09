@@ -396,12 +396,10 @@ export class ContractParser {
     if (!candidates.length) return []
 
     const contract = new Contract(ERC165ABI, { address, nod3: this.nod3 })
-    const supports = async interfaceId => {
-      const res = await this.call(contract, 'supportsInterface', [interfaceId], { blockNumber })
-      return res === true
-    }
+    const answer = interfaceId => this.call(contract, 'supportsInterface', [interfaceId], { blockNumber })
+    const supports = async interfaceId => (await answer(interfaceId)) === true
 
-    if (!(await supports('0x01ffc9a7')) || (await supports('0xffffffff'))) return []
+    if (!(await supports('0x01ffc9a7')) || (await answer('0xffffffff')) !== false) return []
 
     const confirmed = []
     for (const [name, { id }] of candidates) {

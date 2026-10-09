@@ -1124,5 +1124,14 @@ describe('Contract parser', function () {
       expect(nod3.eth.calls.map(data => data.slice(10, 18))).to.not.include('80ac58cd')
       expect(interfaces).to.not.include(contractsInterfaces.ERC721)
     })
+
+    it('ignores an always-true contract when the node fails on the 0xffffffff call', async () => {
+      const nod3 = probeNod3('0x6080604052', ['01ffc9a7', '80ac58cd', 'd9b67a26', '0e89341c'])
+      const answer = nod3.eth.call.bind(nod3.eth)
+      nod3.eth.call = tx => tx.data.slice(10, 18) === 'ffffffff' ? Promise.reject(new Error('ECONNRESET')) : answer(tx)
+      const { interfaces } = await new ContractParser({ nod3 }).getContractDetails(address)
+
+      expect(interfaces).to.deep.equal([])
+    })
   })
 })
