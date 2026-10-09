@@ -1134,4 +1134,70 @@ describe('Contract parser', function () {
       expect(interfaces).to.deep.equal([])
     })
   })
+
+  describe('24) ERC-165 probe through a proxy', function () {
+    const proxy = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+    const implementation = '0x1234567890123456789012345678901234567890'
+    const metadataOnlyCode = '0x6301ffc9a76306fdde036395d89b4163c87b56dd'
+    const zeroSlot = `0x${'0'.repeat(64)}`
+    const addressSlot = `0x${'0'.repeat(24)}${implementation.slice(2)}`
+    const proxyNod3 = ({ proxyCode, implementationCode = metadataOnlyCode, slots = {}, proxySupports = [], implementationSupports = [] }) => ({
+      eth: {
+        callTargets: [],
+        getContractCodeAt (address) { return Promise.resolve(address === implementation ? implementationCode : proxyCode) },
+        getStorageAt (address, slot) { return Promise.resolve(address === proxy ? slots[slot] ?? zeroSlot : zeroSlot) },
+        call (tx) {
+          this.callTargets.push(tx.to)
+          const supported = tx.to === proxy ? proxySupports : implementationSupports
+          return Promise.resolve(`0x${'0'.repeat(63)}${supported.includes(tx.data.slice(10, 18)) ? 1 : 0}`)
+        }
+      }
+    })
+    const clone44 = `0x3d3d3d3d363d3d37363d73${implementation.slice(2)}5af43d3d93803e602a57fd5bf3`
+    const clone45 = `0x363d3d373d3d3d363d73${implementation.slice(2)}5af43d82803e903d91602b57fd5bf3`
+
+    it('confirms ERC721 when the clone answers true and its implementation answers false', async () => {
+      const nod3 = proxyNod3({ proxyCode: clone44, proxySupports: ['01ffc9a7', '80ac58cd'], implementationSupports: ['01ffc9a7'] })
+      const contractDetails = await new ContractParser({ nod3 }).getContractDetails(proxy)
+
+      expect(contractDetails.implementationAddress).to.equal(implementation)
+      expect(contractDetails.interfaces).to.include.members([contractsInterfaces.ERC1167, 'ERC721Metadata', contractsInterfaces.ERC721])
+      expect(nod3.eth.callTargets).to.not.include(implementation)
+    })
+
+    it('does not confirm ERC721 when only the implementation answers true', async () => {
+      const nod3 = proxyNod3({ proxyCode: clone44, proxySupports: ['01ffc9a7'], implementationSupports: ['01ffc9a7', '80ac58cd'] })
+      const { interfaces } = await new ContractParser({ nod3 }).getContractDetails(proxy)
+
+      expect(interfaces).to.not.include(contractsInterfaces.ERC721)
+    })
+
+    it('confirms ERC1155 when the clone answers true and its implementation answers false', async () => {
+      const nod3 = proxyNod3({ proxyCode: clone45, implementationCode: '0x6301ffc9a7', proxySupports: ['01ffc9a7', 'd9b67a26'], implementationSupports: ['01ffc9a7'] })
+      const { interfaces } = await new ContractParser({ nod3 }).getContractDetails(proxy)
+
+      expect(interfaces).to.include.members([contractsInterfaces.ERC1167, contractsInterfaces.ERC1155])
+      expect(nod3.eth.callTargets).to.not.include(implementation)
+    })
+
+    it('asks an ERC-1967 proxy, not its implementation', async () => {
+      const slots = { '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc': addressSlot }
+      const nod3 = proxyNod3({ proxyCode: '0x6080604052', slots, proxySupports: ['01ffc9a7', '80ac58cd'], implementationSupports: ['01ffc9a7'] })
+      const contractDetails = await new ContractParser({ nod3 }).getContractDetails(proxy)
+
+      expect(contractDetails.proxyType).to.equal(PROXY_TYPES.ERC1967.Normal)
+      expect(contractDetails.interfaces).to.include(contractsInterfaces.ERC721)
+      expect(nod3.eth.callTargets).to.not.include(implementation)
+    })
+
+    it('asks a key.implementation proxy, not its implementation', async () => {
+      const slots = { '0x950d7e977b74051843ed988c77d53a700cd967d2ac5480d98dd4c1edaf0b4dc8': addressSlot }
+      const nod3 = proxyNod3({ proxyCode: '0x6080604052', slots, proxySupports: ['01ffc9a7', '80ac58cd'], implementationSupports: ['01ffc9a7'] })
+      const contractDetails = await new ContractParser({ nod3 }).getContractDetails(proxy)
+
+      expect(contractDetails.proxyType).to.equal(PROXY_TYPES.KeyImplementationSlot)
+      expect(contractDetails.interfaces).to.include(contractsInterfaces.ERC721)
+      expect(nod3.eth.callTargets).to.not.include(implementation)
+    })
+  })
 })

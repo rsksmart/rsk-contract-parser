@@ -355,19 +355,7 @@ class ContractParser {
    * }>} The contract methods and ERC interfaces
    */
   async getContractMethodsAndERCInterfaces(address, blockNumber = 'latest', contractByteCode = null) {
-    contractByteCode = contractByteCode || (await this.getContractCodeFromNode(address, blockNumber));
-    const methods = this.getMethodsFromContractByteCode(contractByteCode);
-    const interfaces = this.getInterfacesByMethods(methods);
-
-    const withoutSelectors = methods.length === 0;
-    if (withoutSelectors || methods.includes('supportsInterface(bytes4)')) {
-      const confirmed = await this.getInterfacesByERC165Calls(address, blockNumber, interfaces, withoutSelectors);
-      for (const name of confirmed) {
-        if (!interfaces.includes(name)) interfaces.push(name);
-      }
-    }
-
-    return { methods, interfaces };
+    return this.#methodsAndInterfaces(address, address, blockNumber, contractByteCode);
   }
 
   /**
@@ -454,7 +442,7 @@ class ContractParser {
         contractDetails.proxyType = ERC1167ProxyDetails.proxyType;
         if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
           // Use implementation methods and interfaces. Append proxy standard interfaces
-          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber);
+          const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber);
           contractDetails.methods = methods;
           contractDetails.interfaces = [_types.contractsInterfaces.ERC1167, ...interfaces];
         }
@@ -470,7 +458,7 @@ class ContractParser {
         contractDetails.proxyType = ERC1822ProxyDetails.proxyType;
         if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
           // Use implementation methods and interfaces. Append proxy standard interfaces
-          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber);
+          const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber);
           contractDetails.methods = methods;
           contractDetails.interfaces = [_types.contractsInterfaces.ERC1822, ...interfaces];
         }
@@ -487,7 +475,7 @@ class ContractParser {
         contractDetails.proxyType = ERC1967ProxyDetails.proxyType;
         if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
           // Use implementation methods and interfaces. Append proxy standard interfaces
-          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber);
+          const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber);
           contractDetails.methods = methods;
           contractDetails.interfaces = [_types.contractsInterfaces.ERC1967, ...interfaces];
         }
@@ -503,7 +491,7 @@ class ContractParser {
         contractDetails.proxyType = OZUnstructuredStorageProxyDetails.proxyType;
         if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
           // Use implementation methods and interfaces
-          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber);
+          const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber);
           contractDetails.methods = methods;
           contractDetails.interfaces = interfaces;
         }
@@ -744,6 +732,22 @@ class ContractParser {
     return result;
   }
 
+  async #methodsAndInterfaces(codeAddress, erc165Address, blockNumber, contractByteCode = null) {
+    contractByteCode = contractByteCode || (await this.getContractCodeFromNode(codeAddress, blockNumber));
+    const methods = this.getMethodsFromContractByteCode(contractByteCode);
+    const interfaces = this.getInterfacesByMethods(methods);
+
+    const withoutSelectors = methods.length === 0;
+    if (withoutSelectors || methods.includes('supportsInterface(bytes4)')) {
+      const confirmed = await this.getInterfacesByERC165Calls(erc165Address, blockNumber, interfaces, withoutSelectors);
+      for (const name of confirmed) {
+        if (!interfaces.includes(name)) interfaces.push(name);
+      }
+    }
+
+    return { methods, interfaces };
+  }
+
   async #resolveKeyImplementationProxy(contractDetails, blockNumber) {
     const proxyDetails = await this.isKeyImplementationSlotProxy(contractDetails.address, blockNumber);
     if (!proxyDetails.isProxy) return false;
@@ -752,7 +756,7 @@ class ContractParser {
     contractDetails.implementationAddress = proxyDetails.implementationAddress;
     contractDetails.proxyType = proxyDetails.proxyType;
     if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
-      const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber);
+      const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber);
       contractDetails.methods = methods;
       contractDetails.interfaces = interfaces;
     }
