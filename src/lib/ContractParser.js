@@ -529,6 +529,8 @@ export class ContractParser {
    *   proxyType: string | null
    * }>} The proxy details
    * @see https://eips.ethereum.org/EIPS/eip-1167
+   * @see https://github.com/Vectorized/solady/blob/2afba69bf67b78dd4abeadcc696052b3a6f71499/src/utils/LibClone.sol#L133-L190 (44-byte variant by 0age, runtime code)
+   * @see https://github.com/optionality/clone-factory/issues/10#issuecomment-565549150 (0age's 44-byte variant, EIP-1167 discussion)
    */
   async isERC1167Proxy (contractAddress, blockNumber = 'latest', contractByteCode = null) {
     const result = {
@@ -763,6 +765,19 @@ export class ContractParser {
     return true
   }
 
+  /**
+   * Checks if the contract is a proxy contract keeping its implementation at storage slot keccak256("key.implementation"), as Sovryn's Proxy does (not an official standard)
+   * @param {string} contractAddress - The address of the contract
+   * @param {number | string} [blockNumber] - Optional. Retrieve proxy details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @returns {Promise<{
+   *   address: string,
+   *   isProxy: boolean,
+   *   implementationAddress: string | null,
+   *   proxyType: string | null
+   * }>} The proxy details
+   * @see https://github.com/DistributedCollective/Sovryn-smart-contracts/blob/73d87088ef4fc30450bc6014e48f767f06823138/contracts/proxy/Proxy.sol#L29
+   * @see https://github.com/DistributedCollective/Sovryn-smart-contracts/blob/development/contracts/proxy/Proxy.sol
+   */
   async isKeyImplementationSlotProxy (contractAddress, blockNumber = 'latest') {
     const result = {
       address: contractAddress,
