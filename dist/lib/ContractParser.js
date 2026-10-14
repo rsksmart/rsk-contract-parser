@@ -441,7 +441,6 @@ class ContractParser {
         contractDetails.implementationAddress = ERC1167ProxyDetails.implementationAddress;
         contractDetails.proxyType = ERC1167ProxyDetails.proxyType;
         if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
-          // Use implementation methods and interfaces. Append proxy standard interfaces
           const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber);
           contractDetails.methods = methods;
           contractDetails.interfaces = [_types.contractsInterfaces.ERC1167, ...interfaces];
@@ -457,7 +456,6 @@ class ContractParser {
         contractDetails.implementationAddress = ERC1822ProxyDetails.implementationAddress;
         contractDetails.proxyType = ERC1822ProxyDetails.proxyType;
         if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
-          // Use implementation methods and interfaces. Append proxy standard interfaces
           const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber);
           contractDetails.methods = methods;
           contractDetails.interfaces = [_types.contractsInterfaces.ERC1822, ...interfaces];
@@ -474,7 +472,6 @@ class ContractParser {
         contractDetails.beaconAddress = ERC1967ProxyDetails.beaconAddress;
         contractDetails.proxyType = ERC1967ProxyDetails.proxyType;
         if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
-          // Use implementation methods and interfaces. Append proxy standard interfaces
           const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber);
           contractDetails.methods = methods;
           contractDetails.interfaces = [_types.contractsInterfaces.ERC1967, ...interfaces];
@@ -490,7 +487,6 @@ class ContractParser {
         contractDetails.implementationAddress = OZUnstructuredStorageProxyDetails.implementationAddress;
         contractDetails.proxyType = OZUnstructuredStorageProxyDetails.proxyType;
         if ((0, _addresses2.isAddress)(contractDetails.implementationAddress)) {
-          // Use implementation methods and interfaces
           const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber);
           contractDetails.methods = methods;
           contractDetails.interfaces = interfaces;
