@@ -94,4 +94,17 @@ describe('# Contract interface', function () {
     }
     expect({ errors, warnings }).to.deep.equal({ errors: ['Unauthorized(address)'], warnings: [] })
   })
+
+  it('keeps a function, an event and an error that share a signature, and skips fallback and receive', () => {
+    const inputs = [{ name: 'a', type: 'uint256' }]
+    const abi = [
+      { type: 'fallback', stateMutability: 'payable' },
+      { type: 'receive', stateMutability: 'payable' },
+      { type: 'function', name: 'foo', inputs, outputs: [], stateMutability: 'view' },
+      { type: 'event', name: 'foo', inputs: [{ ...inputs[0], indexed: false }], anonymous: false },
+      { type: 'error', name: 'foo', inputs }
+    ]
+    const { functions, events, errors } = new Contract(abi).contractInterface
+    expect([functions, events, errors].map(Object.keys)).to.deep.equal([['foo(uint256)'], ['foo(uint256)'], ['foo(uint256)']])
+  })
 })
