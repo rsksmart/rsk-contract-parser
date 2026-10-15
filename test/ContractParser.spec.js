@@ -8,14 +8,6 @@ import Contract from '../src/lib/Contract'
 import { Bridge, HEROV6, USDRIF, USDCe, DollarOnChain } from './TestContracts'
 import { contractsInterfaces, PROXY_TYPES } from '../src/lib/types'
 
-// Use this to suppress duplicate definition warning spam from ethers
-// const originalConsoleLog = console.log
-// console.log = function (message) {
-//   if (!String(message).includes('duplicate definition')) {
-//     originalConsoleLog(message)
-//   }
-// }
-
 const getNod3Instance = (network) => {
   if (!network) {
     throw new Error('Nod3 requires a network either "testnet" or "mainnet"')

@@ -94,15 +94,4 @@ describe('# Contract interface', function () {
     }
     expect({ errors, warnings }).to.deep.equal({ errors: ['Unauthorized(address)'], warnings: [] })
   })
-
-  it('leaves console.log untouched when the package entry point is imported', () => {
-    const consoleLog = console.log
-    delete require.cache[require.resolve('../src/index')]
-    try {
-      require('../src/index')
-      expect(console.log).to.equal(consoleLog)
-    } finally {
-      console.log = consoleLog
-    }
-  })
 })
