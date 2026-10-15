@@ -6,6 +6,9 @@ const ADDR = '0x1111111111111111111111111111111111111111'
 const ID = '42'
 const WORD_1 = `0x${'0'.repeat(63)}1`
 const WORD_5 = `0x${'0'.repeat(63)}5`
+const OTHER_ADDR = '0x2222222222222222222222222222222222222222'
+const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+const topicOf = address => `0x${'0'.repeat(24)}${address.slice(2)}`
 
 describe('# Contract overloaded-method resolution', function () {
   const contract = new Contract(defaultABI)
@@ -60,6 +63,36 @@ describe('# Contract interface', function () {
       console.log = consoleLog
     }
     expect(warnings).to.deep.equal([])
+  })
+
+  it('keeps the first Transfer event of the default ABI', () => {
+    expect(new Contract(defaultABI).contractInterface.getEvent('Transfer(address,address,uint256)').format('full'))
+      .to.equal('event Transfer(address indexed from, address indexed to, uint256 value)')
+  })
+
+  it('decodes a Transfer log with the default ABI', () => {
+    const log = { topics: [TRANSFER_TOPIC, topicOf(ADDR), topicOf(OTHER_ADDR)], data: WORD_5 }
+    const { name, args } = new Contract(defaultABI).contractInterface.parseLog(log)
+    expect([name, args.from, args.to, args.value.toString()]).to.deep.equal(['Transfer', ADDR, OTHER_ADDR, '5'])
+  })
+
+  it('keeps the first constructor of the default ABI', () => {
+    expect(new Contract(defaultABI).contractInterface.deploy.format('full'))
+      .to.equal('constructor(string name, string symbol, uint8 decimals)')
+  })
+
+  it('keeps one error per signature without duplicate-definition warnings', () => {
+    const unauthorized = { type: 'error', name: 'Unauthorized', inputs: [{ name: 'account', type: 'address' }] }
+    const consoleLog = console.log
+    const warnings = []
+    console.log = (...args) => { if (String(args[0]).includes('duplicate definition')) warnings.push(args[0]) }
+    let errors
+    try {
+      errors = Object.keys(new Contract([unauthorized, unauthorized]).contractInterface.errors)
+    } finally {
+      console.log = consoleLog
+    }
+    expect({ errors, warnings }).to.deep.equal({ errors: ['Unauthorized(address)'], warnings: [] })
   })
 
   it('leaves console.log untouched when the package entry point is imported', () => {

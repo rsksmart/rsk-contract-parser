@@ -1,17 +1,19 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _abi = require("@ethersproject/abi");
 
-const firstFunctionPerSignature = (abi) => {
-  const bySignature = new Map();
+const duplicateDefinitionKey = (fragment) => fragment.type === 'constructor' ? fragment.type : `${fragment.type} ${fragment.format()}`;
+
+const firstFragmentPerKey = (abi) => {
+  const byKey = new Map();
   for (const definition of abi) {
     const fragment = _abi.Fragment.from(definition);
-    if (fragment?.type !== 'function') continue;
-    const signature = fragment.format();
-    if (!bySignature.has(signature)) bySignature.set(signature, fragment);
+    if (!fragment) continue;
+    const key = duplicateDefinitionKey(fragment);
+    if (!byKey.has(key)) byKey.set(key, fragment);
   }
-  return [...bySignature.values()];
+  return [...byKey.values()];
 };
 
-const functionsInterface = (abi) => new _abi.Interface(Array.isArray(abi) ? firstFunctionPerSignature(abi) : abi);
+const interfaceWithoutDuplicates = (abi) => new _abi.Interface(Array.isArray(abi) ? firstFragmentPerKey(abi) : abi);
 
 const outputTypes = (fragment) => fragment.outputs.map((output) => output.format()).join(',');
 
@@ -33,7 +35,7 @@ class Contract {
     this.abi = abi;
     this.address = address;
     this.nod3 = nod3;
-    this.contractInterface = functionsInterface(abi);
+    this.contractInterface = interfaceWithoutDuplicates(abi);
   }
 
   /**
@@ -74,7 +76,7 @@ class Contract {
    */
   setAbi(newAbi) {
     this.abi = newAbi;
-    this.contractInterface = functionsInterface(newAbi);
+    this.contractInterface = interfaceWithoutDuplicates(newAbi);
   }
 
   /**
