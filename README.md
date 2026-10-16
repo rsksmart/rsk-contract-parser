@@ -290,6 +290,23 @@ Result:
 }
 ```
 
+### NFT event topics
+
+The parser exports the topic0 of the NFT events in its own ERC-721 and ERC-1155 ABIs. Each value is a lowercase `0x`-prefixed hex string, the form a node returns in `log.topics[0]`, so it can be compared with `===`. `ERC721_AND_ERC1155_EVENT_TOPIC0S` is a frozen array with the topic0 of every event in both ABIs, once each.
+
+```javascript
+import {
+  ERC721_TRANSFER_TOPIC0,
+  ERC1155_TRANSFER_SINGLE_TOPIC0,
+  ERC1155_TRANSFER_BATCH_TOPIC0,
+  ERC721_AND_ERC1155_EVENT_TOPIC0S
+} from '@rsksmart/rsk-contract-parser';
+
+const isNftTransfer = log => [ERC721_TRANSFER_TOPIC0, ERC1155_TRANSFER_SINGLE_TOPIC0, ERC1155_TRANSFER_BATCH_TOPIC0].includes(log.topics[0]);
+
+const nftEventTopic0s = new Set(ERC721_AND_ERC1155_EVENT_TOPIC0S);
+```
+
 ### Parsing Transaction Logs
 
 The `ContractParser` class allows to parse transaction logs.
