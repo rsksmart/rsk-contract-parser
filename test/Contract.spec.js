@@ -41,6 +41,15 @@ describe('# Contract overloaded-method resolution', function () {
     expect(contract.decodeCall('transfer', WORD_1, [ADDR, ID])).to.equal(true)
   })
 
+  it('names the outputs of the overload matching the arity of params when the overloads return the same types', () => {
+    const reader = new Contract([
+      { type: 'function', name: 'read', inputs: [], outputs: [{ name: 'count', type: 'uint256' }, { name: 'total', type: 'uint256' }], stateMutability: 'view' },
+      { type: 'function', name: 'read', inputs: [{ name: 'tokenId', type: 'uint256' }], outputs: [{ name: 'id', type: 'uint256' }, { name: 'amount', type: 'uint256' }], stateMutability: 'view' }
+    ])
+    const decoded = reader.decodeCall('read', `${WORD_1}${WORD_5.slice(2)}`, [ID])
+    expect([decoded.id.toString(), decoded.amount.toString()]).to.deep.equal(['1', '5'])
+  })
+
   it('keeps the first definition of a signature the default ABI defines twice with different outputs', async () => {
     const nod3 = { eth: { call: () => Promise.resolve(WORD_1) } }
     const callable = new Contract(defaultABI, { address: ADDR, nod3 })

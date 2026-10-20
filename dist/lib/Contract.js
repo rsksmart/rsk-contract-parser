@@ -108,7 +108,7 @@ class Contract {
    * Decodes a contract call.
    * @param {FunctionFragment | string} method - The method to decode. Can be the method name or a FunctionFragment for more precise method selection
    * @param {string} data - The encoded call data
-   * @param {Array} [params] - Optional. The call parameters, used to pick among overloads of a bare method name by argument count when their outputs differ
+   * @param {Array} [params] - Optional. The call parameters, used first to pick among overloads of a bare method name by argument count
    * @returns {Object} The decoded call result
    * @throws {Error} If a bare method name has overloads with different outputs that params do not disambiguate
    */
@@ -126,11 +126,11 @@ class Contract {
     const candidates = Object.values(this.contractInterface.functions).filter((f) => f.name === method);
     if (candidates.length < 2) return method;
     const resolvable = (fragments) => fragments.length > 0 && new Set(fragments.map(outputTypes)).size === 1;
-    if (resolvable(candidates)) return candidates[0].format();
     if (Array.isArray(params)) {
       const byArity = candidates.filter((f) => f.inputs.length === params.length);
       if (resolvable(byArity)) return byArity[0].format();
     }
+    if (resolvable(candidates)) return candidates[0].format();
     throw new Error(`Ambiguous method "${method}" — its overloads return different types, pass the signature or the params: ${candidates.map((f) => f.format()).join(' | ')}`);
   }
 
