@@ -1,5 +1,22 @@
 "use strict";Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _abi = require("@ethersproject/abi");
 
+const duplicateDefinitionKey = (fragment) => fragment.type === 'constructor' ? fragment.type : `${fragment.type} ${fragment.format()}`;
+
+const firstFragmentPerKey = (abi) => {
+  const byKey = new Map();
+  for (const definition of abi) {
+    const fragment = _abi.Fragment.from(definition);
+    if (!fragment) continue;
+    const key = duplicateDefinitionKey(fragment);
+    if (!byKey.has(key)) byKey.set(key, fragment);
+  }
+  return [...byKey.values()];
+};
+
+const interfaceWithoutDuplicates = (abi) => new _abi.Interface(Array.isArray(abi) ? firstFragmentPerKey(abi) : abi);
+
+const outputTypes = (fragment) => fragment.outputs.map((output) => output.format()).join(',');
+
 /**
  * Contract class allows interaction with a contract on the blockchain.
  */
@@ -18,7 +35,7 @@ class Contract {
     this.abi = abi;
     this.address = address;
     this.nod3 = nod3;
-    this.contractInterface = new _abi.Interface(abi);
+    this.contractInterface = interfaceWithoutDuplicates(abi);
   }
 
   /**
@@ -59,7 +76,7 @@ class Contract {
    */
   setAbi(newAbi) {
     this.abi = newAbi;
-    this.contractInterface = new _abi.Interface(newAbi);
+    this.contractInterface = interfaceWithoutDuplicates(newAbi);
   }
 
   /**
@@ -91,19 +108,30 @@ class Contract {
    * Decodes a contract call.
    * @param {FunctionFragment | string} method - The method to decode. Can be the method name or a FunctionFragment for more precise method selection
    * @param {string} data - The encoded call data
+   * @param {Array} [params] - Optional. The call parameters, used first to pick among overloads of a bare method name by argument count
    * @returns {Object} The decoded call result
+   * @throws {Error} If a bare method name has overloads with different outputs that params do not disambiguate
    */
-  decodeCall(method, data) {
-    if (method instanceof _abi.FunctionFragment) {
-      const { outputs } = method;
-      const decoded = this.contractInterface.decodeFunctionResult(method, data);
-      return Array.isArray(decoded) && outputs && outputs.length < 2 ? decoded[0] : decoded;
-    } else {
-      const signature = this.#resolveSignature(method);
-      const { outputs } = this.contractInterface.getFunction(signature);
-      const decoded = this.contractInterface.decodeFunctionResult(signature, data);
-      return Array.isArray(decoded) && outputs && outputs.length < 2 ? decoded[0] : decoded;
+  decodeCall(method, data, params) {
+    const fragment = method instanceof _abi.FunctionFragment ?
+    method :
+    this.contractInterface.getFunction(this.#resolveDecodeSignature(method, params));
+    const { outputs } = fragment;
+    const decoded = this.contractInterface.decodeFunctionResult(fragment, data);
+    return Array.isArray(decoded) && outputs && outputs.length < 2 ? decoded[0] : decoded;
+  }
+
+  #resolveDecodeSignature(method, params) {
+    if (typeof method !== 'string' || method.includes('(')) return method;
+    const candidates = Object.values(this.contractInterface.functions).filter((f) => f.name === method);
+    if (candidates.length < 2) return method;
+    const resolvable = (fragments) => fragments.length > 0 && new Set(fragments.map(outputTypes)).size === 1;
+    if (Array.isArray(params)) {
+      const byArity = candidates.filter((f) => f.inputs.length === params.length);
+      if (resolvable(byArity)) return byArity[0].format();
     }
+    if (resolvable(candidates)) return candidates[0].format();
+    throw new Error(`Ambiguous method "${method}" — its overloads return different types, pass the signature or the params: ${candidates.map((f) => f.format()).join(' | ')}`);
   }
 
   /**
