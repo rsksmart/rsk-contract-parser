@@ -45,5 +45,6 @@ export const PROXY_TYPES = {
     Normal: 'ERC1967 Proxy Storage Slots - Normal',
     Beacon: 'ERC1967 Proxy Storage Slots - Beacon'
   },
-  ERC1167: 'ERC1167 Minimal Proxy'
+  ERC1167: 'ERC1167 Minimal Proxy',
+  KeyImplementationSlot: 'Upgradable Proxy - keccak256("key.implementation") Slot'
 }

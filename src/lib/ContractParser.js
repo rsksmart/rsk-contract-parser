@@ -1,5 +1,5 @@
 import interfacesIds from './interfacesIds'
-import { includesAll } from '@rsksmart/rsk-utils'
+import { includesAll, keccak256, add0x } from '@rsksmart/rsk-utils'
 import NativeContractsDecoder from './nativeContracts/NativeContractsDecoder'
 import NativeContracts from './nativeContracts/NativeContracts'
 import Contract from './Contract'
@@ -25,6 +25,13 @@ import {
   getLatestBridgeMethods
 } from './utils'
 import { isAddress } from '@rsksmart/rsk-utils/dist/addresses'
+
+const ERC1167_RUNTIME_CODES = [
+  /^0x363d3d373d3d3d363d73([0-9a-f]{40})5af43d82803e903d91602b57fd5bf3$/i,
+  /^0x3d3d3d3d363d3d37363d73([0-9a-f]{40})5af43d3d93803e602a57fd5bf3$/i
+]
+
+const KEY_IMPLEMENTATION_SLOT = add0x(keccak256('key.implementation'))
 
 /**
  * The ContractParser class handles the analysis and interpretation of Ethereum smart contracts.
@@ -348,45 +355,39 @@ export class ContractParser {
    * }>} The contract methods and ERC interfaces
    */
   async getContractMethodsAndERCInterfaces (address, blockNumber = 'latest', contractByteCode = null) {
-    contractByteCode = contractByteCode || await this.getContractCodeFromNode(address, blockNumber)
-    const methods = this.getMethodsFromContractByteCode(contractByteCode)
-    const interfaces = this.getInterfacesByMethods(methods)
-
-    if (methods.includes('supportsInterface(bytes4)')) {
-      const confirmed = await this.getInterfacesByERC165Calls(address, blockNumber, interfaces)
-      for (const name of confirmed) {
-        if (!interfaces.includes(name)) interfaces.push(name)
-      }
-    }
-
-    return { methods, interfaces }
+    return this.#methodsAndInterfaces(address, address, blockNumber, contractByteCode)
   }
 
   /**
    * Confirms interfaces via on-chain ERC-165 supportsInterface calls.
    *
    * Bytecode selector scanning misses contracts whose dispatcher doesn't embed
-   * selectors literally, so interfaces whose standard mandates ERC-165 (flagged
-   * with erc165 in interfacesIds) get settled by asking the contract itself.
+   * selectors literally, so some interfaces get settled by asking the contract itself:
+   * those flagged with erc165 in interfacesIds, those flagged with erc165WithExtensions
+   * when one of the listed extensions was detected, and, when the scan found no
+   * selectors at all, those flagged with erc165WithoutSelectors.
    * Contracts answering true to 0xffffffff violate ERC-165 and are ignored.
    *
    * @param {string} address - The contract address
    * @param {number | string} [blockNumber] - Optional. Can be a block number or a tag. Defaults to tag 'latest'.
    * @param {string[]} [detectedInterfaces] - Interfaces already detected, skipped here
+   * @param {boolean} [withoutSelectors] - Whether the bytecode scan found no selectors. Defaults to false.
    * @returns {Promise<string[]>} The confirmed interface names
    */
-  async getInterfacesByERC165Calls (address, blockNumber = 'latest', detectedInterfaces = []) {
+  async getInterfacesByERC165Calls (address, blockNumber = 'latest', detectedInterfaces = [], withoutSelectors = false) {
     const candidates = Object.entries(interfacesIds)
-      .filter(([name, { erc165 }]) => erc165 && !detectedInterfaces.includes(contractsInterfaces[name] || name))
+      .filter(([name, { erc165, erc165WithoutSelectors, erc165WithExtensions }]) => {
+        if (detectedInterfaces.includes(contractsInterfaces[name] || name)) return false
+        if (withoutSelectors) return erc165WithoutSelectors
+        return erc165 || erc165WithExtensions.some(extension => detectedInterfaces.includes(extension))
+      })
     if (!candidates.length) return []
 
     const contract = new Contract(ERC165ABI, { address, nod3: this.nod3 })
-    const supports = async interfaceId => {
-      const res = await this.call(contract, 'supportsInterface', [interfaceId], { blockNumber })
-      return res === true
-    }
+    const answer = interfaceId => this.call(contract, 'supportsInterface', [interfaceId], { blockNumber })
+    const supports = async interfaceId => (await answer(interfaceId)) === true
 
-    if (!(await supports('0x01ffc9a7')) || (await supports('0xffffffff'))) return []
+    if (!(await supports('0x01ffc9a7')) || (await answer('0xffffffff')) !== false) return []
 
     const confirmed = []
     for (const [name, { id }] of candidates) {
@@ -440,8 +441,7 @@ export class ContractParser {
         contractDetails.implementationAddress = ERC1167ProxyDetails.implementationAddress
         contractDetails.proxyType = ERC1167ProxyDetails.proxyType
         if (isAddress(contractDetails.implementationAddress)) {
-          // Use implementation methods and interfaces. Append proxy standard interfaces
-          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
+          const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber)
           contractDetails.methods = methods
           contractDetails.interfaces = [contractsInterfaces.ERC1167, ...interfaces]
         }
@@ -456,8 +456,7 @@ export class ContractParser {
         contractDetails.implementationAddress = ERC1822ProxyDetails.implementationAddress
         contractDetails.proxyType = ERC1822ProxyDetails.proxyType
         if (isAddress(contractDetails.implementationAddress)) {
-          // Use implementation methods and interfaces. Append proxy standard interfaces
-          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
+          const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber)
           contractDetails.methods = methods
           contractDetails.interfaces = [contractsInterfaces.ERC1822, ...interfaces]
         }
@@ -473,8 +472,7 @@ export class ContractParser {
         contractDetails.beaconAddress = ERC1967ProxyDetails.beaconAddress
         contractDetails.proxyType = ERC1967ProxyDetails.proxyType
         if (isAddress(contractDetails.implementationAddress)) {
-          // Use implementation methods and interfaces. Append proxy standard interfaces
-          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
+          const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber)
           contractDetails.methods = methods
           contractDetails.interfaces = [contractsInterfaces.ERC1967, ...interfaces]
         }
@@ -489,8 +487,7 @@ export class ContractParser {
         contractDetails.implementationAddress = OZUnstructuredStorageProxyDetails.implementationAddress
         contractDetails.proxyType = OZUnstructuredStorageProxyDetails.proxyType
         if (isAddress(contractDetails.implementationAddress)) {
-          // Use implementation methods and interfaces
-          const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractDetails.implementationAddress, blockNumber)
+          const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber)
           contractDetails.methods = methods
           contractDetails.interfaces = interfaces
         }
@@ -498,8 +495,14 @@ export class ContractParser {
         return contractDetails
       }
 
+      const withoutSelectors = this.getMethodsFromContractByteCode(contractByteCode).length === 0
+      if (withoutSelectors && await this.#resolveKeyImplementationProxy(contractDetails, blockNumber)) return contractDetails
+
       // Normal contracts
       const { methods, interfaces } = await this.getContractMethodsAndERCInterfaces(contractAddress, blockNumber, contractByteCode)
+
+      if (!withoutSelectors && !interfaces.length && await this.#resolveKeyImplementationProxy(contractDetails, blockNumber)) return contractDetails
+
       contractDetails.methods = methods
       contractDetails.interfaces = interfaces
 
@@ -512,9 +515,6 @@ export class ContractParser {
 
   /**
    * Checks if the contract is an ERC1167 minimal proxy.
-   * The whole runtime bytecode is a fixed 45-byte delegatecall forwarder with
-   * the implementation address embedded at bytes 10-29, so detection is a
-   * bytecode pattern match — minimal proxies keep no storage slots.
    * @param {string} contractAddress - The address of the contract
    * @param {number | string} [blockNumber] - Optional. Retrieve proxy details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
    * @param {string} [contractByteCode] - Optional. Preloaded runtime bytecode, skips the node fetch.
@@ -525,6 +525,8 @@ export class ContractParser {
    *   proxyType: string | null
    * }>} The proxy details
    * @see https://eips.ethereum.org/EIPS/eip-1167
+   * @see https://github.com/Vectorized/solady/blob/2afba69bf67b78dd4abeadcc696052b3a6f71499/src/utils/LibClone.sol#L133-L190 (44-byte variant by 0age, runtime code)
+   * @see https://github.com/optionality/clone-factory/issues/10#issuecomment-565549150 (0age's 44-byte variant, EIP-1167 discussion)
    */
   async isERC1167Proxy (contractAddress, blockNumber = 'latest', contractByteCode = null) {
     const result = {
@@ -544,7 +546,7 @@ export class ContractParser {
       }
     }
 
-    const match = /^0x363d3d373d3d3d363d73([0-9a-f]{40})5af43d82803e903d91602b57fd5bf3$/i.exec(code || '')
+    const match = ERC1167_RUNTIME_CODES.map(runtimeCode => runtimeCode.exec(code || '')).find(Boolean)
     if (match) {
       result.isProxy = true
       result.proxyType = PROXY_TYPES.ERC1167
@@ -725,6 +727,75 @@ export class ContractParser {
     }
 
     // Not a proxy contract
+    return result
+  }
+
+  async #methodsAndInterfaces (codeAddress, erc165Address, blockNumber, contractByteCode = null) {
+    contractByteCode = contractByteCode || await this.getContractCodeFromNode(codeAddress, blockNumber)
+    const methods = this.getMethodsFromContractByteCode(contractByteCode)
+    const interfaces = this.getInterfacesByMethods(methods)
+
+    const withoutSelectors = methods.length === 0
+    if (withoutSelectors || methods.includes('supportsInterface(bytes4)')) {
+      const confirmed = await this.getInterfacesByERC165Calls(erc165Address, blockNumber, interfaces, withoutSelectors)
+      for (const name of confirmed) {
+        if (!interfaces.includes(name)) interfaces.push(name)
+      }
+    }
+
+    return { methods, interfaces }
+  }
+
+  async #resolveKeyImplementationProxy (contractDetails, blockNumber) {
+    const proxyDetails = await this.isKeyImplementationSlotProxy(contractDetails.address, blockNumber)
+    if (!proxyDetails.isProxy) return false
+
+    contractDetails.isProxy = true
+    contractDetails.implementationAddress = proxyDetails.implementationAddress
+    contractDetails.proxyType = proxyDetails.proxyType
+    if (isAddress(contractDetails.implementationAddress)) {
+      const { methods, interfaces } = await this.#methodsAndInterfaces(contractDetails.implementationAddress, contractDetails.address, blockNumber)
+      contractDetails.methods = methods
+      contractDetails.interfaces = interfaces
+    }
+    return true
+  }
+
+  /**
+   * Checks if the contract is a proxy contract keeping its implementation at storage slot keccak256("key.implementation"), as Sovryn's Proxy does (not an official standard)
+   * @param {string} contractAddress - The address of the contract
+   * @param {number | string} [blockNumber] - Optional. Retrieve proxy details at the given block number. Can be a block number or a tag. Defaults to tag 'latest'.
+   * @returns {Promise<{
+   *   address: string,
+   *   isProxy: boolean,
+   *   implementationAddress: string | null,
+   *   proxyType: string | null
+   * }>} The proxy details
+   * @see https://github.com/DistributedCollective/Sovryn-smart-contracts/blob/73d87088ef4fc30450bc6014e48f767f06823138/contracts/proxy/Proxy.sol#L29
+   * @see https://github.com/DistributedCollective/Sovryn-smart-contracts/blob/development/contracts/proxy/Proxy.sol
+   */
+  async isKeyImplementationSlotProxy (contractAddress, blockNumber = 'latest') {
+    const result = {
+      address: contractAddress,
+      isProxy: false,
+      implementationAddress: null,
+      proxyType: null
+    }
+
+    let implementationSlotValue
+    try {
+      implementationSlotValue = await this.getStorageSlotValueFromNode(contractAddress, KEY_IMPLEMENTATION_SLOT, blockNumber)
+    } catch (err) {
+      this.log.warn(`[${contractAddress}] Error checking implementation slot for ${PROXY_TYPES.KeyImplementationSlot}: ${err}`)
+      return Promise.reject(err)
+    }
+
+    if (notZero(implementationSlotValue)) {
+      result.proxyType = PROXY_TYPES.KeyImplementationSlot
+      result.isProxy = true
+      result.implementationAddress = formatAddressFromSlot(implementationSlotValue)
+    }
+
     return result
   }
 
